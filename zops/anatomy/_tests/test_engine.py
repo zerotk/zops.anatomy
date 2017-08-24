@@ -1,6 +1,5 @@
-import os
-
-from zops.anatomy.anatomy import AnatomyFile, AnatomyTree, AnatomyFeature
+from zops.anatomy.engine import AnatomyFile, AnatomyTree, AnatomyFeature
+from zops.anatomy.assertions import assert_file_contents
 
 
 def test_anatomy_file(datadir):
@@ -20,7 +19,7 @@ def test_anatomy_file(datadir):
     f.apply(datadir)
 
     # Check
-    _assert_file(
+    assert_file_contents(
         datadir + '/gitignore',
         """
             a
@@ -44,7 +43,7 @@ def test_anatomy_tree(datadir):
     tree.apply(datadir)
 
     # Check
-    _assert_file(
+    assert_file_contents(
         datadir + '/.gitignore',
         """
             line 1
@@ -82,14 +81,14 @@ def test_anatomy_feature(datadir):
     tree.apply(datadir)
 
     # Check
-    _assert_file(
+    assert_file_contents(
         datadir + '/.gitignore',
         """
             .pyd
             .pyc
         """
     )
-    _assert_file(
+    assert_file_contents(
         datadir + '/pytest.ini',
         """
             [pytest]
@@ -98,12 +97,3 @@ def test_anatomy_feature(datadir):
             timeout = 240
         """
     )
-
-
-def _assert_file(filename, expected):
-    from zops.anatomy.text import dedent
-
-    expected = dedent(expected)
-    assert os.path.isfile(filename)
-    obtained = open(filename, 'r').read()
-    assert obtained == expected

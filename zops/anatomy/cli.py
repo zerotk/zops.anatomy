@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 from zerotk.zops import Console
-from .anatomy import Anatomy
+from .engine import Anatomy
 
 import click
 

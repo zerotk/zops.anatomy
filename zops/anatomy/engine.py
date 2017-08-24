@@ -102,19 +102,35 @@ class AnatomyFeature(object):
         tree.apply('directory')
     """
 
+    feature_registry = {}
+
     def __init__(self):
         pass
 
     @classmethod
     def get(cls, feature_name):
         """
-        Returns the feature instance asssociated with the given name.
+        Returns a previously registered feature associated with the given feature_name.
 
         :param str feature_name:
         :return AnatomyFeature:
         """
+        return cls.feature_registry[feature_name]
 
-        raise NotImplementedError()
+    @classmethod
+    def register(cls, feature_name, feature):
+        """
+        Registers a feature instance to a name.
+
+        :param str feature_name:
+        :param AnatomyFeature feature:
+        """
+        assert feature_name not in cls.feature_registry
+        cls.feature_registry[feature_name] = feature
+
+    @classmethod
+    def clear_registry(cls):
+        cls.feature_registry = {}
 
     def apply(self, tree):
         """

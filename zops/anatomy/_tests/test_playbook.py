@@ -1,5 +1,5 @@
 from zops.anatomy.assertions import assert_file_contents
-from zops.anatomy.engine import AnatomyFeature
+from zops.anatomy.engine import AnatomyFeature, ProgrammableAnatomyFeature
 from zops.anatomy.playbook import AnatomyPlaybook
 
 
@@ -19,14 +19,34 @@ def test_anatomy_playbook_file(datadir):
     """
     Tests anatomy-playbook as a class.
     """
-    _configure_features()
+    AnatomyFeature.register_from_file(datadir + '/anatomy-features.yml')
+    playbook = AnatomyPlaybook.from_file(datadir + '/anatomy-playbook.yml')
 
-    playbook = AnatomyPlaybook.from_file(datadir + '/ansible-playbook.yml')
+    target_dir = datadir + '/target'
+    playbook.apply(target_dir)
 
-    _execute_and_check(datadir, playbook)
+    assert_file_contents(
+        target_dir + '/.gitignore',
+        """
+            /.idea/
+            /.project/
+            .pyc
+            .pyd
+            .pyo
+        """
+    )
+
+    assert_file_contents(
+        target_dir + '/pytest.ini',
+        """
+            [pytest]
+            timeout = 100
+        """
+    )
 
 
 def _execute_and_check(datadir, playbook):
+
     # Execute
     target_dir = datadir + '/target'
     playbook.apply(target_dir)
@@ -48,27 +68,6 @@ def _execute_and_check(datadir, playbook):
 
 
 def _configure_features():
-
-    class ProgrammableAnatomyFeature(AnatomyFeature):
-
-        class Item(object):
-
-            def __init__(self, filename, contents):
-                self.filename = filename
-                self.contents = contents
-
-        def __init__(self):
-            super(ProgrammableAnatomyFeature, self).__init__()
-            self.__items = []
-
-        def add_file_block(self, filename, contents):
-            item = self.Item(filename, contents)
-            self.__items.append(item)
-
-        def apply(self, tree):
-            for i_item in self.__items:
-                tree[i_item.filename].add_block(i_item.contents)
-
     AnatomyFeature.clear_registry()
 
     feature = ProgrammableAnatomyFeature()

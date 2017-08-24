@@ -129,6 +129,17 @@ class AnatomyFeature(object):
         cls.feature_registry[feature_name] = feature
 
     @classmethod
+    def register_from_file(cls, filename):
+        from .yaml import read_yaml
+
+        contents = read_yaml(filename)
+        for i_feature in contents['features']:
+            feature = ProgrammableAnatomyFeature()
+            for j_item in i_feature['items']:
+                feature.add_file_block(j_item['filename'], j_item['contents'])
+            cls.register(i_feature['name'], feature)
+
+    @classmethod
     def clear_registry(cls):
         cls.feature_registry = {}
 
@@ -139,3 +150,24 @@ class AnatomyFeature(object):
         :param AnatomyTree tree:
         """
         raise NotImplementedError()
+
+
+class ProgrammableAnatomyFeature(AnatomyFeature):
+
+    class Item(object):
+
+        def __init__(self, filename, contents):
+            self.filename = filename
+            self.contents = contents
+
+    def __init__(self):
+        super(ProgrammableAnatomyFeature, self).__init__()
+        self.__items = []
+
+    def add_file_block(self, filename, contents):
+        item = self.Item(filename, contents)
+        self.__items.append(item)
+
+    def apply(self, tree):
+        for i_item in self.__items:
+            tree[i_item.filename].add_block(i_item.contents)

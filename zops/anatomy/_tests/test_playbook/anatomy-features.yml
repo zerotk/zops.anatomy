@@ -1,0 +1,19 @@
+features:
+  - name: ide-ignores
+    items:
+      - filename: .gitignore
+        contents: |
+          /.idea/
+          /.project/
+      - filename: pytest.ini
+        contents: |
+          [pytest]
+          timeout = 100
+
+  - name: python-project
+    items:
+      - filename: .gitignore
+        contents: |
+          .pyc
+          .pyd
+          .pyo

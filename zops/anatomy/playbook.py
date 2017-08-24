@@ -1,4 +1,5 @@
 from zops.anatomy.engine import AnatomyTree, AnatomyFeature
+from .yaml import read_yaml
 
 
 class AnatomyPlaybook(object):
@@ -12,7 +13,9 @@ class AnatomyPlaybook(object):
     @classmethod
     def from_file(cls, filename):
         result = cls()
-        result.use_feature('alpha')
+        contents = read_yaml(filename)
+        for i_feature in contents['use-features']:
+            result.use_feature(i_feature)
         return result
 
     def use_feature(self, feature_name):

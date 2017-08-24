@@ -133,10 +133,11 @@ class AnatomyFeature(object):
         from .yaml import read_yaml
 
         contents = read_yaml(filename)
-        for i_feature in contents['features']:
+        for i_feature in contents['anatomy-features']:
             feature = ProgrammableAnatomyFeature()
             for j_item in i_feature['items']:
-                feature.add_file_block(j_item['filename'], j_item['contents'])
+                add_file_block = j_item['add-file-block']
+                feature.add_file_block(add_file_block['filename'], add_file_block['contents'])
             cls.register(i_feature['name'], feature)
 
     @classmethod

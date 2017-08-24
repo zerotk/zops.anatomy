@@ -15,36 +15,6 @@ def test_anatomy_playbook(datadir):
     _execute_and_check(datadir, playbook)
 
 
-def test_anatomy_playbook_file(datadir):
-    """
-    Tests anatomy-playbook as a class.
-    """
-    AnatomyFeature.register_from_file(datadir + '/anatomy-features.yml')
-    playbook = AnatomyPlaybook.from_file(datadir + '/anatomy-playbook.yml')
-
-    target_dir = datadir + '/target'
-    playbook.apply(target_dir)
-
-    assert_file_contents(
-        target_dir + '/.gitignore',
-        """
-            /.idea/
-            /.project/
-            .pyc
-            .pyd
-            .pyo
-        """
-    )
-
-    assert_file_contents(
-        target_dir + '/pytest.ini',
-        """
-            [pytest]
-            timeout = 100
-        """
-    )
-
-
 def _execute_and_check(datadir, playbook):
 
     # Execute
@@ -85,3 +55,33 @@ def _configure_features():
         """
     )
     AnatomyFeature.register('alpha', feature)
+
+
+def test_anatomy_playbook_file(datadir):
+    """
+    Tests anatomy-playbook as a class.
+    """
+    AnatomyFeature.register_from_file(datadir + '/anatomy-features.yml')
+    playbook = AnatomyPlaybook.from_file(datadir + '/anatomy-playbook.yml')
+
+    target_dir = datadir + '/target'
+    playbook.apply(target_dir)
+
+    assert_file_contents(
+        target_dir + '/.gitignore',
+        """
+            /.idea/
+            /.project/
+            .pyc
+            .pyd
+            .pyo
+        """
+    )
+
+    assert_file_contents(
+        target_dir + '/pytest.ini',
+        """
+            [pytest]
+            timeout = 100
+        """
+    )

@@ -32,6 +32,18 @@ def test_anatomy_file(datadir):
     )
 
 
+def test_anatomy_file_with_filenames_using_variables(datadir):
+    f = AnatomyFile("{filename}")
+    f.add_block('This is alpha.')
+    f.apply(datadir, variables={'filename': 'alpha.txt'})
+    assert_file_contents(
+        datadir + '/alpha.txt',
+        """
+            This is alpha.
+        """
+    )
+
+
 def test_anatomy_tree(datadir):
 
     # Prepare

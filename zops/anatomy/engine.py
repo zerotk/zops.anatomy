@@ -40,6 +40,7 @@ class AnatomyFile(object):
         if not contents.endswith('\n'):
             contents += '\n'
 
+        filename = filename.format_map(variables)
         with open(filename, 'w') as oss:
             oss.write(contents)
 

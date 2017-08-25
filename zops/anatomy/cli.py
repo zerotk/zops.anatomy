@@ -23,10 +23,12 @@ def apply(ctx, directories):
     """
     Apply templates.
     """
-    from .engine import AnatomyFeature
+    from .engine import AnatomyFeatureRegistry
     from .playbook import AnatomyPlaybook
 
-    AnatomyFeature.register_from_file('/home/kaniabi/Projects/zerotk/zops.anatomy/templates/anatomy-features.yml')
+    AnatomyFeatureRegistry.register_from_file(
+        '/home/kaniabi/Projects/zerotk/zops.anatomy/templates/anatomy-features.yml'
+    )
 
     if not directories:
         directories = ('.',)

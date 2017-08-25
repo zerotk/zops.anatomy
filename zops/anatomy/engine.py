@@ -2,6 +2,36 @@ from .text import dedent
 import os
 
 
+class TemplateEngine(object):
+    """
+    Provide an easy and centralized way to change how we expand templates.
+    """
+
+    __singleton = None
+
+    @classmethod
+    def get(cls):
+        if cls.__singleton is None:
+            cls.__singleton = cls()
+        return cls.__singleton
+
+    def expand(self, text, variables):
+        from jinja2 import Template
+        template = Template(
+            text,
+            trim_blocks=True,
+            lstrip_blocks=True,
+            keep_trailing_newline=True,
+        )
+        result = template.render(**variables)
+
+        # other = text.format_map(variables)
+        # assert result == other
+
+        return result
+
+
+
 class AnatomyFile(object):
     """
     Implements an abstraction of a file composed by blocks.
@@ -40,18 +70,21 @@ class AnatomyFile(object):
         if not contents.endswith('\n'):
             contents += '\n'
 
-        filename = filename.format_map(variables)
+        filename = TemplateEngine.get().expand(filename, variables)
         with open(filename, 'w') as oss:
             oss.write(contents)
 
 
 class AnatomyFileBlock(object):
+    """
+    An anatomy-file is composed by many blocks. This class represents one of these blocks.
+    """
 
     def __init__(self, contents):
         self.__contents = contents
 
     def as_text(self, variables):
-        result = self.__contents.format_map(variables)
+        result = TemplateEngine.get().expand(self.__contents, variables)
         return result
 
 
@@ -97,24 +130,13 @@ class AnatomyTree(object):
             i_file.apply(directory, variables)
 
 
-class AnatomyFeature(object):
-    """
-    Implements a feature. A feature can add content in many files in its 'apply' method.
-
-    Usage:
-        tree = AnatomyTree()
-        variables = {}
-
-        feature = AnatomyFeature.get('alpha')
-        feature.apply(tree, variables)
-
-        tree.apply('directory')
-    """
+class AnatomyFeatureRegistry(object):
 
     feature_registry = {}
 
-    def __init__(self):
-        pass
+    @classmethod
+    def clear(cls):
+        cls.feature_registry = {}
 
     @classmethod
     def get(cls, feature_name):
@@ -143,22 +165,52 @@ class AnatomyFeature(object):
 
         contents = read_yaml(filename)
         for i_feature in contents['anatomy-features']:
-            feature = ProgrammableAnatomyFeature()
-            for j_item in i_feature['items']:
-                add_file_block = j_item['add-file-block']
-                feature.add_file_block(add_file_block['filename'], add_file_block['contents'])
-            cls.register(i_feature['name'], feature)
+            name = i_feature['name']
+            feature = ProgrammableAnatomyFeature(name, i_feature.get('variables', {}))
+            items = i_feature['items']
+            for j_item in items:
 
-    @classmethod
-    def clear_registry(cls):
-        cls.feature_registry = {}
+                # Handle add-file-block
+                details = j_item.get('add-file-block')
+                if details:
+                    feature.add_file_block(details['filename'], details['contents'])
+
+                # Handle pytest-ini
+                # Handle add-python-dependencies
+                # Design Pattern: Strategy (?)
+
+            cls.register(name, feature)
+
+
+class AnatomyFeature(object):
+    """
+    Implements a feature. A feature can add content in many files in its 'apply' method.
+
+    Usage:
+        tree = AnatomyTree()
+        variables = {}
+
+        feature = AnatomyFeatureRegistry.get('alpha')
+        feature.apply(tree, variables)
+
+        tree.apply('directory')
+    """
+
+    def __init__(self, name):
+        self.__name = name
+
+    @property
+    def name(self):
+        return self.__name
+
+    def get_variables(self):
+        raise NotImplementedError()
 
     def apply(self, tree):
         """
         Apply this feature instance in the given anatomy-tree.
 
         :param AnatomyTree tree:
-        :param dict variables:
         """
         raise NotImplementedError()
 
@@ -171,14 +223,24 @@ class ProgrammableAnatomyFeature(AnatomyFeature):
             self.filename = filename
             self.contents = contents
 
-    def __init__(self):
-        super(ProgrammableAnatomyFeature, self).__init__()
+    def __init__(self, name, variables=None):
+        super(ProgrammableAnatomyFeature, self).__init__(name)
         self.__items = []
+        self.__variables = variables or {}
+
+    def get_variables(self):
+        """
+        Implements AnatomyFeature.get_variables.
+        """
+        return self.__variables
+
+    def apply(self, tree):
+        """
+        Implements AnatomyFeature.apply.
+        """
+        for i_item in self.__items:
+            tree[i_item.filename].add_block(i_item.contents)
 
     def add_file_block(self, filename, contents):
         item = self.Item(filename, contents)
         self.__items.append(item)
-
-    def apply(self, tree):
-        for i_item in self.__items:
-            tree[i_item.filename].add_block(i_item.contents)

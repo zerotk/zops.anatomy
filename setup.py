@@ -36,6 +36,8 @@ setup(
     """,
     install_requires=[
         'zerotk.zops',
+        'munch',
+        'jinja2',
     ],
     dependency_links=[
     ],

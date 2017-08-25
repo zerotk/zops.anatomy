@@ -1,4 +1,6 @@
-from zops.anatomy.engine import AnatomyTree, AnatomyFeature
+from munch import Munch
+
+from zops.anatomy.engine import AnatomyTree, AnatomyFeature, AnatomyFeatureRegistry
 from .yaml import read_yaml
 
 
@@ -8,7 +10,7 @@ class AnatomyPlaybook(object):
     """
 
     def __init__(self):
-        self.__features = []
+        self.__features = {}
         self.__variables = {}
 
     @classmethod
@@ -22,7 +24,8 @@ class AnatomyPlaybook(object):
         return result
 
     def use_feature(self, feature_name):
-        self.__features.append(feature_name)
+        assert feature_name not in self.__features
+        self.__features[feature_name] = AnatomyFeatureRegistry.get(feature_name)
 
     def set_variable(self, key, value):
         """
@@ -32,8 +35,6 @@ class AnatomyPlaybook(object):
         :param str key:
         :param object value:
         """
-        from munch import Munch
-
         assert key not in self.__variables
         if isinstance(value, dict):
             # NOTE: A dictionary with values accessible using attribute notation.
@@ -44,13 +45,23 @@ class AnatomyPlaybook(object):
     def apply(self, directory):
         import os
 
+        variables = {}
         tree = AnatomyTree()
 
         if not os.path.isdir(directory):
             os.makedirs(directory)
 
-        for i_feature_name in self.__features:
-            feature = AnatomyFeature.get(i_feature_name)
-            feature.apply(tree)
+        for i_feature_name, i_feature in self.__features.items():
+            print('applying anatomy-feature {}'.format(i_feature_name))
+            i_feature.apply(tree)
+            feature_variables = i_feature.get_variables()
+            if feature_variables:
+                print('applying anatomy-feature variables:')
+                for i_key, i_value in feature_variables.items():
+                    print('  {}: {}'.format(i_key, i_value))
+                variables[i_feature.name] = Munch(**feature_variables)
 
-        tree.apply(directory, self.__variables)
+        variables.update(self.__variables)
+
+        print('applying anatomy-tree')
+        tree.apply(directory, variables)

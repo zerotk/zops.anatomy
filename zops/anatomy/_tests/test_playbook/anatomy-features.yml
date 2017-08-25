@@ -27,15 +27,14 @@ anatomy-features:
             .pyd
             .pyo
 
-
   - name: readme
     items:
       - name: readme
         add-file-block:
           filename: README.md
           contents: |
-            # This is {project.name}.
+            # This is {{project.name}}.
 
-            The code is at `{project.code_name}`.
+            The code is at `{{project.code_name}}`.
 
-            Global is {global}.
+            Global is {{global}}.

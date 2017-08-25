@@ -52,6 +52,17 @@ def test_integration(datadir):
     playbook.apply(target_dir)
 
     assert_file_contents(
+        target_dir + '/README.md',
+        """
+            # This is Alpha.
+            
+            The code is at `alpha`.
+            
+            Global is YES.
+        """
+    )
+
+    assert_file_contents(
         target_dir + '/.gitignore',
         """
             /.idea/

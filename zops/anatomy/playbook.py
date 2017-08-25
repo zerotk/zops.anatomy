@@ -17,6 +17,8 @@ class AnatomyPlaybook(object):
         contents = read_yaml(filename)
         for i_feature in contents['use-features']:
             result.use_feature(i_feature)
+        for i_key, i_value in contents.get('variables', {}).items():
+            result.set_variable(i_key, i_value)
         return result
 
     def use_feature(self, feature_name):

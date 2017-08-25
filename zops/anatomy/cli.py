@@ -27,7 +27,7 @@ def apply(ctx, directories):
     from .playbook import AnatomyPlaybook
 
     AnatomyFeatureRegistry.register_from_file(
-        '/home/kaniabi/Projects/zerotk/zops.anatomy/templates/anatomy-features.yml'
+        '/home/kaniabi/Projects/axado/anatomy/anatomy-features.yml'
     )
 
     if not directories:

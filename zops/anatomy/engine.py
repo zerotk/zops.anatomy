@@ -23,12 +23,20 @@ class AnatomyFile(object):
             contents += '\n'
         self.blocks.append(AnatomyFileBlock(contents))
 
-    def apply(self, directory):
+    def apply(self, directory, variables):
+        """
+        Create the file using all registered blocks.
+        Expand variables in all blocks.
+
+        :param directory:
+        :param variables:
+        :return:
+        """
         filename = os.path.join(directory, self.__filename)
 
         contents = ''
         for i_block in self.blocks:
-            contents += i_block.as_text()
+            contents += i_block.as_text(variables)
         if not contents.endswith('\n'):
             contents += '\n'
 
@@ -41,10 +49,8 @@ class AnatomyFileBlock(object):
     def __init__(self, contents):
         self.__contents = contents
 
-    def as_text(self):
-        import copy
-
-        result = copy.deepcopy(self.__contents)
+    def as_text(self, variables):
+        result = self.__contents.format_map(variables)
         return result
 
 
@@ -79,14 +85,15 @@ class AnatomyTree(object):
         """
         return self.get_file(item)
 
-    def apply(self, directory):
+    def apply(self, directory, variables):
         """
         Create all registered files.
 
         :param str directory:
+        :param dict variables:
         """
         for i_file in self.__files.values():
-            i_file.apply(directory)
+            i_file.apply(directory, variables)
 
 
 class AnatomyFeature(object):
@@ -95,9 +102,10 @@ class AnatomyFeature(object):
 
     Usage:
         tree = AnatomyTree()
+        variables = {}
 
         feature = AnatomyFeature.get('alpha')
-        feature.apply(tree)
+        feature.apply(tree, variables)
 
         tree.apply('directory')
     """
@@ -149,6 +157,7 @@ class AnatomyFeature(object):
         Apply this feature instance in the given anatomy-tree.
 
         :param AnatomyTree tree:
+        :param dict variables:
         """
         raise NotImplementedError()
 

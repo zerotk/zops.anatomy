@@ -9,6 +9,7 @@ class AnatomyPlaybook(object):
 
     def __init__(self):
         self.__features = []
+        self.__variables = {}
 
     @classmethod
     def from_file(cls, filename):
@@ -20,6 +21,23 @@ class AnatomyPlaybook(object):
 
     def use_feature(self, feature_name):
         self.__features.append(feature_name)
+
+    def set_variable(self, key, value):
+        """
+
+        NOTE: Not sure we should handle dictionary values to Munch here.
+
+        :param str key:
+        :param object value:
+        """
+        from munch import Munch
+
+        assert key not in self.__variables
+        if isinstance(value, dict):
+            # NOTE: A dictionary with values accessible using attribute notation.
+            value = Munch(**value)
+
+        self.__variables[key] = value
 
     def apply(self, directory):
         import os
@@ -33,4 +51,4 @@ class AnatomyPlaybook(object):
             feature = AnatomyFeature.get(i_feature_name)
             feature.apply(tree)
 
-        tree.apply(directory)
+        tree.apply(directory, self.__variables)

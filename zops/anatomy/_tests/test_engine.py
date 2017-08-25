@@ -16,7 +16,7 @@ def test_anatomy_file(datadir):
     f.add_block('e\nf')
 
     # Execute
-    f.apply(datadir)
+    f.apply(datadir, variables={})
 
     # Check
     assert_file_contents(
@@ -40,7 +40,7 @@ def test_anatomy_tree(datadir):
     tree['.gitignore'].add_block('line 2')
 
     # Execute
-    tree.apply(datadir)
+    tree.apply(datadir, variables={})
 
     # Check
     assert_file_contents(
@@ -78,7 +78,7 @@ def test_anatomy_feature(datadir):
 
     # Execute
     feature.apply(tree)
-    tree.apply(datadir)
+    tree.apply(datadir, variables={})
 
     # Check
     assert_file_contents(

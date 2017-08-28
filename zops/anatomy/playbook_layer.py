@@ -1,6 +1,6 @@
 from munch import Munch
 
-from zops.anatomy.engine import AnatomyTree, AnatomyFeature, AnatomyFeatureRegistry
+from zops.anatomy.feature_layer import AnatomyFeatureRegistry
 from .yaml import read_yaml
 
 
@@ -43,6 +43,7 @@ class AnatomyPlaybook(object):
         self.__variables[key] = value
 
     def apply(self, directory):
+        from zops.anatomy.tree_layer import AnatomyTree
         import os
 
         variables = {}

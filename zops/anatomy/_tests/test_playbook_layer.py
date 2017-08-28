@@ -1,8 +1,8 @@
 import pytest
 
 from zops.anatomy.assertions import assert_file_contents
-from zops.anatomy.engine import ProgrammableAnatomyFeature, AnatomyFeatureRegistry
-from zops.anatomy.playbook import AnatomyPlaybook
+from zops.anatomy.feature_layer import ProgrammableAnatomyFeature, AnatomyFeatureRegistry
+from zops.anatomy.playbook_layer import AnatomyPlaybook
 
 
 def test_anatomy_playbook(anatomy_tester):

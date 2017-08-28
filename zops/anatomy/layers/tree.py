@@ -1,6 +1,6 @@
 import os
 
-from .text import dedent
+from zops.anatomy.text import dedent
 
 
 class TemplateEngine(object):
@@ -17,18 +17,20 @@ class TemplateEngine(object):
         return cls.__singleton
 
     def expand(self, text, variables):
-        from jinja2 import Template
-        template = Template(
-            text,
+
+        from jinja2 import Environment, Template
+        env = Environment(
             trim_blocks=True,
             lstrip_blocks=True,
             keep_trailing_newline=True,
         )
-        result = template.render(**variables)
 
-        # other = text.format_map(variables)
-        # assert result == other
+        def expandit(text_):
+            template_ = env.from_string(text_, template_class=Template)
+            return template_.render(**variables)
 
+        env.filters['expandit'] = expandit
+        result = expandit(text)
         return result
 
 
@@ -99,6 +101,7 @@ class AnatomyTree(object):
     """
 
     def __init__(self):
+        self.variables = {}
         self.__files = {}
 
     def get_file(self, filename):
@@ -119,14 +122,58 @@ class AnatomyTree(object):
         """
         return self.get_file(item)
 
-    def apply(self, directory, variables):
+    def apply(self, directory, variables=None):
         """
         Create all registered files.
 
         :param str directory:
         :param dict variables:
         """
+        dd = self.variables.copy()
+        if variables is not None:
+            dd = merge_dict(dd, variables)
+
         for i_file in self.__files.values():
-            i_file.apply(directory, variables)
+            i_file.apply(directory, dd)
+
+    def create_file(self, fileid, filename, variables={}):
+        if fileid in self.__files:
+            raise FileExistsError(fileid)
+
+        self.__files[fileid] = AnatomyFile(filename)
+        self.variables[fileid] = variables
+        return None
+
+    def add_file_block(self, fileid, contents):
+        if fileid not in self.__files:
+            raise FileNotFoundError(fileid)
+        file = self.__files[fileid]
+        file.add_block(contents)
+        return None
+
+    def add_variables(self, variables):
+        self.variables = merge_dict(self.variables, variables)
+        return None
 
 
+def merge_dict(a, b, left_join=True):
+
+    def merge_value(v1, v2):
+        if v2 is None:
+            return v1
+        elif isinstance(v1, dict):
+            return merge_dict(v1, v2, left_join=False)
+        elif isinstance(v1, (list, tuple)):
+            return v1 + v2
+        else:
+            return v2
+
+    if left_join:
+        keys = a.keys()
+        right_keys = set(b.keys()).difference(set(a.keys()))
+        if right_keys:
+            raise RuntimeError('Extra keys: {}'.format(right_keys))
+    else:
+        keys = set(a.keys()).union(set(b.keys()))
+
+    return {i: merge_value(a.get(i), b.get(i)) for i in keys}

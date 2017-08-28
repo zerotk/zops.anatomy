@@ -1,5 +1,7 @@
-from zops.anatomy.tree_layer import AnatomyFile, AnatomyTree
+import pytest
+
 from zops.anatomy.assertions import assert_file_contents
+from zops.anatomy.layers.tree import AnatomyFile, AnatomyTree, merge_dict
 
 
 def test_anatomy_file(datadir):
@@ -52,7 +54,7 @@ def test_anatomy_tree(datadir):
     tree['.gitignore'].add_block('line 2')
 
     # Execute
-    tree.apply(datadir, variables={})
+    tree.apply(datadir)
 
     # Check
     assert_file_contents(
@@ -62,3 +64,68 @@ def test_anatomy_tree(datadir):
             line 2
         """
     )
+
+
+def test_anatomy_tree_with_variables(datadir):
+
+    # Prepare
+    tree = AnatomyTree()
+    tree['alpha.txt'].add_block('This is {{ name }}.')
+
+    # Without defined variables
+    tree.apply(datadir)
+    assert_file_contents(
+        datadir + '/alpha.txt',
+        """
+            This is .
+        """
+    )
+
+    # With defined variables
+    tree.variables['name'] = 'ALPHA'
+    tree.apply(datadir)
+    assert_file_contents(
+        datadir + '/alpha.txt',
+        """
+            This is ALPHA.
+        """
+    )
+
+
+def test_merge_dict():
+    # We can add only KEYS that already exists on 'a'.
+    with pytest.raises(RuntimeError):
+        assert merge_dict(
+            dict(a=1),
+            dict(b=2)
+        )
+
+    with pytest.raises(RuntimeError):
+        assert merge_dict(
+            dict(a=1),
+            dict(b=2),
+            left_join=True
+        )
+
+    assert merge_dict(
+        dict(a=1),
+        dict(b=2),
+        left_join=False
+    ) == dict(a=1, b=2)
+
+    assert merge_dict(
+        dict(a=dict(a=1)),
+        dict(a=dict(b=2)),
+    ) == dict(a=dict(a=1, b=2))
+
+    assert merge_dict({'a': 1}, {'a': 2}) == {'a': 2}
+    assert merge_dict({'a': [1]}, {'a': [2]}) == {'a': [1, 2]}
+    assert merge_dict({'a': {'aa': [1]}}, {'a': {'aa': [2]}}) == {'a': {'aa': [1, 2]}}
+    assert merge_dict(
+        {'a': {'aa': [1]}},
+        {'a': {'aa': [2]}}
+    ) == {'a': {'aa': [1, 2]}}
+    assert merge_dict(
+        {'PROJECT': {'code_name': 'alpha'}},
+        {'PROJECT': {'code_name': 'zulu'}}
+    ) == {'PROJECT': {'code_name': 'zulu'}}

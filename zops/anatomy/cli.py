@@ -23,8 +23,8 @@ def apply(ctx, directories):
     """
     Apply templates.
     """
-    from .engine import AnatomyFeatureRegistry
-    from .playbook import AnatomyPlaybook
+    from .layers.feature import AnatomyFeatureRegistry
+    from .layers.playbook import AnatomyPlaybook
 
     AnatomyFeatureRegistry.register_from_file(
         '/home/kaniabi/Projects/axado/anatomy/anatomy-features.yml'

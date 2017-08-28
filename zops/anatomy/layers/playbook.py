@@ -1,7 +1,7 @@
 from munch import Munch
 
-from zops.anatomy.feature_layer import AnatomyFeatureRegistry
-from .yaml import read_yaml
+from zops.anatomy.layers.feature import AnatomyFeatureRegistry, FeatureNotFound
+from zops.anatomy.yaml import yaml_fom_file
 
 
 class AnatomyPlaybook(object):
@@ -16,7 +16,7 @@ class AnatomyPlaybook(object):
     @classmethod
     def from_file(cls, filename):
         result = cls()
-        contents = read_yaml(filename)
+        contents = yaml_fom_file(filename)
         for i_feature in contents['use-features']:
             result.use_feature(i_feature)
         for i_key, i_value in contents.get('variables', {}).items():
@@ -24,7 +24,6 @@ class AnatomyPlaybook(object):
         return result
 
     def use_feature(self, feature_name):
-        assert feature_name not in self.__features
         self.__features[feature_name] = AnatomyFeatureRegistry.get(feature_name)
 
     def set_variable(self, key, value):
@@ -36,17 +35,12 @@ class AnatomyPlaybook(object):
         :param object value:
         """
         assert key not in self.__variables
-        if isinstance(value, dict):
-            # NOTE: A dictionary with values accessible using attribute notation.
-            value = Munch(**value)
-
         self.__variables[key] = value
 
     def apply(self, directory):
-        from zops.anatomy.tree_layer import AnatomyTree
+        from zops.anatomy.layers.tree import AnatomyTree
         import os
 
-        variables = {}
         tree = AnatomyTree()
 
         if not os.path.isdir(directory):
@@ -55,14 +49,6 @@ class AnatomyPlaybook(object):
         for i_feature_name, i_feature in self.__features.items():
             print('applying anatomy-feature {}'.format(i_feature_name))
             i_feature.apply(tree)
-            feature_variables = i_feature.get_variables()
-            if feature_variables:
-                print('applying anatomy-feature variables:')
-                for i_key, i_value in feature_variables.items():
-                    print('  {}: {}'.format(i_key, i_value))
-                variables[i_feature.name] = Munch(**feature_variables)
-
-        variables.update(self.__variables)
 
         print('applying anatomy-tree')
-        tree.apply(directory, variables)
+        tree.apply(directory, self.__variables)

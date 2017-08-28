@@ -1,6 +1,8 @@
 use-features:
-  - ide-ignores
+  - gitignore
+  - gitignore-ides
   - python-project
+  - python-pytest
   - readme
 
 variables:

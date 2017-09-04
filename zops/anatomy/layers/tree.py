@@ -1,6 +1,7 @@
 import os
 
 from zops.anatomy.text import dedent
+from collections import OrderedDict
 
 
 class TemplateEngine(object):
@@ -101,7 +102,7 @@ class AnatomyTree(object):
     """
 
     def __init__(self):
-        self.variables = {}
+        self.__variables = OrderedDict()
         self.__files = {}
 
     def get_file(self, filename):
@@ -129,19 +130,19 @@ class AnatomyTree(object):
         :param str directory:
         :param dict variables:
         """
-        dd = self.variables.copy()
+        dd = self.__variables.copy()
         if variables is not None:
             dd = merge_dict(dd, variables)
 
         for i_file in self.__files.values():
             i_file.apply(directory, dd)
 
-    def create_file(self, fileid, filename, variables={}):
+    def create_file(self, fileid, filename, variables=None):
         if fileid in self.__files:
             raise FileExistsError(fileid)
 
         self.__files[fileid] = AnatomyFile(filename)
-        self.variables[fileid] = variables
+        self.__variables[fileid] = variables or OrderedDict()
         return None
 
     def add_file_block(self, fileid, contents):
@@ -151,12 +152,13 @@ class AnatomyTree(object):
         file.add_block(contents)
         return None
 
-    def add_variables(self, variables):
-        self.variables = merge_dict(self.variables, variables)
+    def add_variables(self, variables, left_join=True):
+        self.__variables = merge_dict(self.__variables, variables, left_join=left_join)
         return None
 
 
 def merge_dict(a, b, left_join=True):
+    import itertools
 
     def merge_value(v1, v2):
         if v2 is None:
@@ -174,6 +176,9 @@ def merge_dict(a, b, left_join=True):
         if right_keys:
             raise RuntimeError('Extra keys: {}'.format(right_keys))
     else:
-        keys = set(a.keys()).union(set(b.keys()))
+        keys = list(a.keys()) + [i for i in b.keys() if i not in a]
 
-    return {i: merge_value(a.get(i), b.get(i)) for i in keys}
+    result = OrderedDict()
+    for i_key in keys:
+        result[i_key] = merge_value(a.get(i_key), b.get(i_key))
+    return result

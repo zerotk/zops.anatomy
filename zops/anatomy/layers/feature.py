@@ -1,17 +1,22 @@
 from zops.anatomy.layers.tree import merge_dict
+from collections import OrderedDict
 
 
 class FeatureNotFound(KeyError):
     pass
 
 
+class FeatureAlreadyRegistered(KeyError):
+    pass
+
+
 class AnatomyFeatureRegistry(object):
 
-    feature_registry = {}
+    feature_registry = OrderedDict()
 
     @classmethod
     def clear(cls):
-        cls.feature_registry = {}
+        cls.feature_registry = OrderedDict()
 
     @classmethod
     def get(cls, feature_name):
@@ -35,7 +40,8 @@ class AnatomyFeatureRegistry(object):
         :param str feature_name:
         :param AnatomyFeature feature:
         """
-        assert feature_name not in cls.feature_registry
+        if feature_name in cls.feature_registry:
+            raise FeatureAlreadyRegistered(feature_name)
         cls.feature_registry[feature_name] = feature
 
     @classmethod
@@ -58,7 +64,8 @@ class AnatomyFeatureRegistry(object):
     def _register_from_contents(cls, contents):
         for i_feature in contents['anatomy-features']:
             name = i_feature['name']
-            feature = AnatomyFeature(name, i_feature.get('variables', {}))
+            variables = i_feature.get('variables', OrderedDict())
+            feature = AnatomyFeature(name, variables)
             commands = i_feature.get('commands', [])
             for j_command in commands:
 
@@ -151,16 +158,17 @@ class AnatomyFeature(IAnatomyFeature):
                 )
             )
 
-    def __init__(self, name, variables={}):
+    def __init__(self, name, variables=None):
         super(AnatomyFeature, self).__init__(name)
         self.__commands = []
-        self.__variables = {name: variables}
+        self.__variables = OrderedDict()
+        self.__variables[name] = variables or OrderedDict()
 
     def apply(self, tree):
         """
         Implements AnatomyFeature.apply.
         """
-        tree.variables.update(self.__variables)
+        tree.add_variables(self.__variables, left_join=False)
         for i_command in self.__commands:
             i_command(tree)
 
@@ -176,11 +184,11 @@ class AnatomyFeature(IAnatomyFeature):
 
     # Commands
 
-    def create_file(self, fileid, filename, variables={}):
+    def create_file(self, fileid, filename, variables=None):
         command = self.Command('create_file', fileid=fileid, filename=filename, variables=variables)
         self.__commands.append(command)
 
-    def add_variables(self, variables={}):
+    def add_variables(self, variables):
         command = self.Command('add_variables', variables=variables)
         self.__commands.append(command)
 

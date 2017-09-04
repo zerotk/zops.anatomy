@@ -3,6 +3,8 @@ import pytest
 from zops.anatomy.assertions import assert_file_contents
 from zops.anatomy.layers.tree import AnatomyFile, AnatomyTree, merge_dict
 
+import os
+
 
 def test_anatomy_file(datadir):
 
@@ -46,6 +48,19 @@ def test_anatomy_file_with_filenames_using_variables(datadir):
     )
 
 
+def test_anatomy_file_replace_filename_with_variable(datadir):
+    f = AnatomyFile("alpha.txt")
+    f.add_block('This is alpha.')
+    f.apply(datadir, variables={}, filename='zulu.txt')
+    assert not os.path.isfile(datadir + '/alpha.txt')
+    assert_file_contents(
+        datadir + '/zulu.txt',
+        """
+            This is alpha.
+        """
+    )
+
+
 def test_anatomy_tree(datadir):
 
     # Prepare
@@ -82,7 +97,10 @@ def test_anatomy_tree_with_variables(datadir):
     )
 
     # With defined variables
-    tree.variables['name'] = 'ALPHA'
+    tree.add_variables(
+        {'name': 'ALPHA'},
+        left_join=False
+    )
     tree.apply(datadir)
     assert_file_contents(
         datadir + '/alpha.txt',

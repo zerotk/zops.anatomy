@@ -56,7 +56,7 @@ class AnatomyFile(object):
             contents += '\n'
         self.blocks.append(AnatomyFileBlock(contents))
 
-    def apply(self, directory, variables):
+    def apply(self, directory, variables, filename=None):
         """
         Create the file using all registered blocks.
         Expand variables in all blocks.
@@ -65,8 +65,8 @@ class AnatomyFile(object):
         :param variables:
         :return:
         """
-        filename = os.path.join(directory, self.__filename)
-
+        filename = filename or self.__filename
+        filename = os.path.join(directory, filename)
         contents = ''
         for i_block in self.blocks:
             contents += i_block.as_text(variables)
@@ -134,27 +134,46 @@ class AnatomyTree(object):
         if variables is not None:
             dd = merge_dict(dd, variables)
 
-        for i_file in self.__files.values():
-            i_file.apply(directory, dd)
+        for i_fileid, i_file in self.__files.items():
+            i_file.apply(directory, dd, filename=dd.get(i_fileid + '.filename'))
 
     def create_file(self, fileid, filename, variables=None):
+        """
+        Create a new file in this tree.
+
+        :param str fileid:
+        :param str filename:
+        :param dict variables:
+        """
         if fileid in self.__files:
             raise FileExistsError(fileid)
 
         self.__files[fileid] = AnatomyFile(filename)
         self.__variables[fileid] = variables or OrderedDict()
-        return None
 
     def add_file_block(self, fileid, contents):
+        """
+        Adds a block to the file with the given id (fileid).
+
+        :param str fileid:
+        :param str contents:
+            Usually a block with multiple lines.
+        """
         if fileid not in self.__files:
             raise FileNotFoundError(fileid)
         file = self.__files[fileid]
         file.add_block(contents)
-        return None
 
     def add_variables(self, variables, left_join=True):
+        """
+        Adds the given variables to this tree variables.
+
+        :param dict variables:
+        :param bool left_join:
+            If True, the root keys of the new variables (variables parameters) must already exist in the current
+            variables dictionary.
+        """
         self.__variables = merge_dict(self.__variables, variables, left_join=left_join)
-        return None
 
 
 def merge_dict(a, b, left_join=True):

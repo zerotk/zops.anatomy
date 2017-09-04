@@ -30,7 +30,7 @@ def tree(ctx):
     tree = sorted([('/' not in filename, filename, fileid, feature) for (feature, fileid, filename) in tree])
     for _priority, i_filename, i_fileid, i_feature in tree:
         Console.item(i_filename)
-        # Console.item('{}  ({})'.format(i_filename, i_fileid))
+
 
 @main.command()
 @click.argument('directories', nargs=-1)

@@ -49,7 +49,7 @@ class AnatomyFeatureRegistry(object):
         from zops.anatomy.yaml import yaml_fom_file
 
         contents = yaml_fom_file(filename)
-        return cls._register_from_contents(contents)
+        return cls.register_from_contents(contents)
 
     @classmethod
     def register_from_text(cls, text):
@@ -58,15 +58,15 @@ class AnatomyFeatureRegistry(object):
 
         text = dedent(text)
         contents = yaml_load(text)
-        return cls._register_from_contents(contents)
+        return cls.register_from_contents(contents)
 
     @classmethod
-    def _register_from_contents(cls, contents):
+    def register_from_contents(cls, contents):
         for i_feature in contents['anatomy-features']:
-            name = i_feature['name']
-            variables = i_feature.get('variables', OrderedDict())
+            name = i_feature.pop('name')
+            variables = i_feature.pop('variables', OrderedDict())
             feature = AnatomyFeature(name, variables)
-            commands = i_feature.get('commands', [])
+            commands = i_feature.pop('commands', [])
             for j_command in commands:
 
                 command = j_command.pop('command', None)
@@ -78,11 +78,14 @@ class AnatomyFeatureRegistry(object):
                     if contents:
                         feature.add_file_block(j_command['fileid'], contents)
 
-                if command == 'add-file-block':
+                elif command == 'add-file-block':
                     feature.add_file_block(**j_command)
 
-                if command == 'add-variables':
+                elif command == 'add-variables':
                     feature.add_variables(**j_command)
+
+            if i_feature.keys():
+                raise KeyError(i_feature.keys())
 
             cls.register(name, feature)
 

@@ -19,12 +19,7 @@ def main():
 @main.command('tree')
 @click.pass_context
 def tree(ctx):
-    from .layers.feature import AnatomyFeatureRegistry
-    from .layers.playbook import AnatomyPlaybook
-
-    AnatomyFeatureRegistry.register_from_file(
-        '/home/kaniabi/Projects/axado/anatomy/anatomy-features.yml'
-    )
+    _register_features()
 
     tree = AnatomyFeatureRegistry.tree()
     tree = sorted([('/' not in filename, filename, fileid, feature) for (feature, fileid, filename) in tree])
@@ -39,12 +34,9 @@ def apply(ctx, directories):
     """
     Apply templates.
     """
-    from .layers.feature import AnatomyFeatureRegistry
     from .layers.playbook import AnatomyPlaybook
 
-    AnatomyFeatureRegistry.register_from_file(
-        '/home/kaniabi/Projects/axado/anatomy/anatomy-features.yml'
-    )
+    _register_features()
 
     if not directories:
         directories = ('.',)
@@ -54,3 +46,9 @@ def apply(ctx, directories):
         Console.title(i_directory)
         anatomy_playbook = AnatomyPlaybook.from_file(i_directory + '/anatomy-playbook.yml')
         anatomy_playbook.apply(i_directory)
+
+
+def _register_features():
+    from .layers.feature import AnatomyFeatureRegistry
+    filename = os.environ['ZOPS_ANATOMY_FEATURES']
+    AnatomyFeatureRegistry.register_from_file(filename)

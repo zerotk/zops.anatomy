@@ -4,6 +4,10 @@ from zops.anatomy.text import dedent
 from collections import OrderedDict
 
 
+class UndefinedVariableInTemplate(KeyError):
+    pass
+
+
 class TemplateEngine(object):
     """
     Provide an easy and centralized way to change how we expand templates.
@@ -19,11 +23,12 @@ class TemplateEngine(object):
 
     def expand(self, text, variables):
 
-        from jinja2 import Environment, Template
+        from jinja2 import Environment, Template, StrictUndefined
         env = Environment(
             trim_blocks=True,
             lstrip_blocks=True,
             keep_trailing_newline=True,
+            undefined=StrictUndefined
         )
 
         def expandit(text_):
@@ -67,16 +72,23 @@ class AnatomyFile(object):
         """
         filename = filename or self.__filename
         filename = os.path.join(directory, filename)
-        contents = ''
-        for i_block in self.blocks:
-            contents += i_block.as_text(variables)
-        if not contents.endswith('\n'):
-            contents += '\n'
-
         filename = TemplateEngine.get().expand(filename, variables)
-        with open(filename, 'w') as oss:
-            oss.write(contents)
 
+        try:
+            contents = ''
+            for i_block in self.blocks:
+                contents += i_block.as_text(variables)
+            if not contents.endswith('\n'):
+                contents += '\n'
+        except Exception as e:
+            raise RuntimeError('ERROR: {}: {}'.format(filename, e))
+
+        os.makedirs(os.path.dirname(filename), exist_ok=True)
+        try:
+            with open(filename, 'w') as oss:
+                oss.write(contents)
+        except Exception as e:
+            raise RuntimeError(e)
 
 class AnatomyFileBlock(object):
     """
@@ -130,12 +142,18 @@ class AnatomyTree(object):
         :param str directory:
         :param dict variables:
         """
+        from jinja2 import UndefinedError
+
         dd = self.__variables.copy()
         if variables is not None:
             dd = merge_dict(dd, variables)
 
         for i_fileid, i_file in self.__files.items():
-            i_file.apply(directory, dd, filename=dd.get(i_fileid + '.filename'))
+            try:
+                filename = dd[i_fileid]['filename']
+            except KeyError:
+                filename = None
+            i_file.apply(directory, variables=dd, filename=filename)
 
     def create_file(self, fileid, filename, variables=None):
         """

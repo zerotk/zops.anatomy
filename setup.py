@@ -38,6 +38,8 @@ setup(
         'zerotk.zops',
         'munch',
         'jinja2',
+        'pyaml',
+        'yamlordereddictloader',
     ],
     dependency_links=[
     ],

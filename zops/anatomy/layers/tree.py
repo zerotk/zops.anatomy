@@ -77,8 +77,8 @@ class AnatomyFile(object):
 
 
 def _create_file(filename, contents):
-    if not contents.endswith('\n'):
-        contents += '\n'
+    contents.rstrip('\n')
+    contents += '\n'
     os.makedirs(os.path.dirname(filename), exist_ok=True)
     try:
         with open(filename, 'w') as oss:

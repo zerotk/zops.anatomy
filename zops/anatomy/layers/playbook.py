@@ -17,14 +17,12 @@ class AnatomyPlaybook(object):
     def from_file(cls, filename):
         contents = yaml_fom_file(filename)
         result = cls.from_contents(contents)
-        if contents.keys():
-            raise KeyError(contents.keys())
         return result
 
     @classmethod
     def from_contents(cls, contents):
         result = cls()
-        contents = contents.get('anatomy-playbook', contents)
+        contents = contents.pop('anatomy-playbook', contents)
         for i_feature in contents.pop('use-features'):
             result.__use_feature(i_feature)
         for i_key, i_value in contents.pop('variables', {}).items():

@@ -26,16 +26,16 @@ class AnatomyPlaybook(object):
         result = cls()
         contents = contents.get('anatomy-playbook', contents)
         for i_feature in contents.pop('use-features'):
-            result.use_feature(i_feature)
+            result.__use_feature(i_feature)
         for i_key, i_value in contents.pop('variables', {}).items():
-            result.set_variable(i_key, i_value)
+            result.__set_variable(i_key, i_value)
         return result
 
-    def use_feature(self, feature_name):
+    def __use_feature(self, feature_name):
         feature = AnatomyFeatureRegistry.get(feature_name)
-        self.__features[feature_name] = feature
+        feature.using_features(self.__features)
 
-    def set_variable(self, key, value):
+    def __set_variable(self, key, value):
         """
 
         NOTE: Not sure we should handle dictionary values to Munch here.

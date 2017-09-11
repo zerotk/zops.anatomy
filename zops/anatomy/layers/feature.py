@@ -30,7 +30,6 @@ class AnatomyFeatureRegistry(object):
             return cls.feature_registry[feature_name]
         except KeyError:
             raise FeatureNotFound(feature_name)
-        
 
     @classmethod
     def register(cls, feature_name, feature):
@@ -64,8 +63,11 @@ class AnatomyFeatureRegistry(object):
     def register_from_contents(cls, contents):
         for i_feature in contents['anatomy-features']:
             name = i_feature.pop('name')
+
             variables = i_feature.pop('variables', OrderedDict())
-            feature = AnatomyFeature(name, variables)
+            use_features = i_feature.pop('use-features', None)
+            feature = AnatomyFeature(name, variables, use_features)
+
             commands = i_feature.pop('commands', [])
             for j_command in commands:
 
@@ -137,7 +139,7 @@ class IAnatomyFeature(object):
 
 class AnatomyFeature(IAnatomyFeature):
 
-    class Command(object):
+    class TreeCommand(object):
 
         def __init__(self, command, **kwargs):
             self.command = command
@@ -155,16 +157,18 @@ class AnatomyFeature(IAnatomyFeature):
                 )
             )
 
-    def __init__(self, name, variables=None):
+    def __init__(self, name, variables=None, use_features=None):
         super(AnatomyFeature, self).__init__(name)
         self.__commands = []
         self.__variables = OrderedDict()
         self.__variables[name] = variables or OrderedDict()
+        self.__use_features = use_features or OrderedDict()
 
     def apply(self, tree):
         """
         Implements AnatomyFeature.apply.
         """
+        tree.add_variables(self.__use_features, left_join=True)
         tree.add_variables(self.__variables, left_join=False)
         for i_command in self.__commands:
             i_command(tree)
@@ -179,12 +183,23 @@ class AnatomyFeature(IAnatomyFeature):
         """
         return [str(i) for i in self.__commands]
 
+    def using_features(self, features):
+        for i_name, i_vars in self.__use_features.items():
+            feature = AnatomyFeatureRegistry.get(i_name)
+            feature.using_features(features)
+        print('using anatomy-feature {} ({})'.format(self.name, id(self)))
+        feature = features.get(self.name)
+        if feature is None:
+            features[self.name] = self
+        else:
+            assert id(feature) == id(self)
+
     # Commands
 
     def create_file(self, fileid, filename, contents, variables=None):
-        command = self.Command('create_file', fileid=fileid, filename=filename, contents=contents, variables=variables)
+        command = self.TreeCommand('create_file', fileid=fileid, filename=filename, contents=contents, variables=variables)
         self.__commands.append(command)
 
     def add_variables(self, variables):
-        command = self.Command('add_variables', variables=variables)
+        command = self.TreeCommand('add_variables', variables=variables)
         self.__commands.append(command)

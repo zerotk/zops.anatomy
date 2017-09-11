@@ -1,7 +1,7 @@
 import pytest
 
 from zops.anatomy.assertions import assert_file_contents
-from zops.anatomy.layers.feature import AnatomyFeature, AnatomyFeatureRegistry
+from zops.anatomy.layers.feature import AnatomyFeatureRegistry
 from zops.anatomy.layers.playbook import AnatomyPlaybook
 
 
@@ -71,15 +71,11 @@ def test_use_features(anatomy_checker):
                 contents: |
                   This is Bravo.
           - name: ZULU
-            commands:
-              - command: add-variables
-                variables:
-                  ALPHA: {}
-                  BRAVO: {}
+            use-features:
+              ALPHA: {}
+              BRAVO: {}
         anatomy-playbook:
             use-features:
-              - ALPHA
-              - BRAVO
               - ZULU
         target:
           alpha.txt: |
@@ -88,6 +84,67 @@ def test_use_features(anatomy_checker):
             This is Bravo.
     """
     anatomy_checker.check(test_use_features.__doc__)
+
+
+def test_use_features_variables(anatomy_checker):
+    """
+        anatomy-features:
+          - name: ALPHA
+            variables:
+              name: Alpha
+            commands:
+              - command: create-file
+                fileid: alphatxt
+                filename: alpha.txt
+                contents: |
+                  This is {{ ALPHA.name }}.
+          - name: ZULU
+            use-features:
+              ALPHA:
+                name: Zulu
+        anatomy-playbook:
+            use-features:
+              - ZULU
+        target:
+          alpha.txt: |
+            This is Zulu.
+    """
+    anatomy_checker.check(test_use_features_variables.__doc__)
+
+
+def test_use_features_duplicate(anatomy_checker):
+    """
+        anatomy-features:
+          - name: ALPHA
+            commands:
+              - command: create-file
+                fileid: alphatxt
+                filename: alpha.txt
+                contents: |
+                  This is Alpha.
+          - name: BRAVO
+            use-features:
+              ALPHA: {}
+            commands:
+              - command: create-file
+                fileid: bravotxt
+                filename: bravo.txt
+                contents: |
+                  This is Bravo.
+          - name: ZULU
+            use-features:
+              ALPHA: {}
+              BRAVO: {}
+        anatomy-playbook:
+            use-features:
+              - ZULU
+        target:
+          alpha.txt: |
+            This is Alpha.
+          bravo.txt: |
+            This is Bravo.
+    """
+    anatomy_checker.check(test_use_features_duplicate.__doc__)
 
 
 def test_undefined(anatomy_checker):

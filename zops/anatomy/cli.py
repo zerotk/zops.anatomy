@@ -19,11 +19,12 @@ def main():
 @main.command('tree')
 @click.pass_context
 def tree(ctx):
+    from zops.anatomy.layers.feature import AnatomyFeatureRegistry
     _register_features()
 
-    tree = AnatomyFeatureRegistry.tree()
-    tree = sorted([('/' not in filename, filename, fileid, feature) for (feature, fileid, filename) in tree])
-    for _priority, i_filename, i_fileid, i_feature in tree:
+    items = AnatomyFeatureRegistry.tree()
+    items = sorted([('/' not in filename, filename, fileid, feature) for (feature, fileid, filename) in items])
+    for _priority, i_filename, i_fileid, i_feature in items:
         Console.item(i_filename)
 
 

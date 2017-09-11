@@ -45,21 +45,13 @@ class AnatomyFile(object):
     Implements an abstraction of a file composed by blocks.
 
     Usage:
-        f = AnatomyFile('filename.txt')
-        f.add_block('first line')
-        f.add_block('second line')
+        f = AnatomyFile('filename.txt', 'first line')
         f.apply('directory')
     """
 
-    def __init__(self, filename):
+    def __init__(self, filename, contents):
         self.__filename = filename
-        self.blocks = []
-
-    def add_block(self, contents):
-        contents = dedent(contents)
-        if not contents.endswith('\n'):
-            contents += '\n'
-        self.blocks.append(AnatomyFileBlock(contents))
+        self.__contents = dedent(contents)
 
     def apply(self, directory, variables, filename=None):
         """
@@ -70,37 +62,41 @@ class AnatomyFile(object):
         :param variables:
         :return:
         """
+        expand = TemplateEngine.get().expand
+
         filename = filename or self.__filename
         filename = os.path.join(directory, filename)
-        filename = TemplateEngine.get().expand(filename, variables)
+        filename = expand(filename, variables)
 
         try:
-            contents = ''
-            for i_block in self.blocks:
-                contents += i_block.as_text(variables)
-            if not contents.endswith('\n'):
-                contents += '\n'
+            contents = expand(self.__contents, variables)
         except Exception as e:
             raise RuntimeError('ERROR: {}: {}'.format(filename, e))
 
-        os.makedirs(os.path.dirname(filename), exist_ok=True)
-        try:
-            with open(filename, 'w') as oss:
-                oss.write(contents)
-        except Exception as e:
-            raise RuntimeError(e)
+        _create_file(filename, contents)
 
-class AnatomyFileBlock(object):
-    """
-    An anatomy-file is composed by many blocks. This class represents one of these blocks.
-    """
 
-    def __init__(self, contents):
-        self.__contents = contents
+def _create_file(filename, contents):
+    if not contents.endswith('\n'):
+        contents += '\n'
+    os.makedirs(os.path.dirname(filename), exist_ok=True)
+    try:
+        with open(filename, 'w') as oss:
+            oss.write(contents)
+    except Exception as e:
+        raise RuntimeError(e)
 
-    def as_text(self, variables):
-        result = TemplateEngine.get().expand(self.__contents, variables)
-        return result
+# class AnatomyFileBlock(object):
+#     """
+#     An anatomy-file is composed by many blocks. This class represents one of these blocks.
+#     """
+#
+#     def __init__(self, contents):
+#         self.__contents = contents
+#
+#     def as_text(self, variables):
+#         result = TemplateEngine.get().expand(self.__contents, variables)
+#         return result
 
 
 class AnatomyTree(object):
@@ -109,7 +105,7 @@ class AnatomyTree(object):
 
     Usage:
         tree = AnatomyTree()
-        tree['.gitignore'].add_block('.pyc')
+        tree.create_file('gitignore', '.gitignore', '.pyc')
         tree.apply('directory')
     """
 
@@ -125,15 +121,6 @@ class AnatomyTree(object):
         :return AnatomyFile:
         """
         return self.__files.setdefault(filename, AnatomyFile(filename))
-
-    def __getitem__(self, item):
-        """
-        Shortcut for get_file.
-
-        :param str item:
-        :return AnatomyFile:
-        """
-        return self.get_file(item)
 
     def apply(self, directory, variables=None):
         """
@@ -155,32 +142,20 @@ class AnatomyTree(object):
                 filename = None
             i_file.apply(directory, variables=dd, filename=filename)
 
-    def create_file(self, fileid, filename, variables=None):
+    def create_file(self, fileid, filename, contents, variables=None):
         """
         Create a new file in this tree.
 
         :param str fileid:
         :param str filename:
+        :param str contents:
         :param dict variables:
         """
         if fileid in self.__files:
             raise FileExistsError(fileid)
 
-        self.__files[fileid] = AnatomyFile(filename)
+        self.__files[fileid] = AnatomyFile(filename, contents)
         self.__variables[fileid] = variables or OrderedDict()
-
-    def add_file_block(self, fileid, contents):
-        """
-        Adds a block to the file with the given id (fileid).
-
-        :param str fileid:
-        :param str contents:
-            Usually a block with multiple lines.
-        """
-        if fileid not in self.__files:
-            raise FileNotFoundError(fileid)
-        file = self.__files[fileid]
-        file.add_block(contents)
 
     def add_variables(self, variables, left_join=True):
         """

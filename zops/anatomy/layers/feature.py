@@ -73,13 +73,7 @@ class AnatomyFeatureRegistry(object):
                 assert commands is not None, "Missing 'command' entry."
 
                 if command == 'create-file':
-                    contents = j_command.pop('contents')
                     feature.create_file(**j_command)
-                    if contents:
-                        feature.add_file_block(j_command['fileid'], contents)
-
-                elif command == 'add-file-block':
-                    feature.add_file_block(**j_command)
 
                 elif command == 'add-variables':
                     feature.add_variables(**j_command)
@@ -187,14 +181,10 @@ class AnatomyFeature(IAnatomyFeature):
 
     # Commands
 
-    def create_file(self, fileid, filename, variables=None):
-        command = self.Command('create_file', fileid=fileid, filename=filename, variables=variables)
+    def create_file(self, fileid, filename, contents, variables=None):
+        command = self.Command('create_file', fileid=fileid, filename=filename, contents=contents, variables=variables)
         self.__commands.append(command)
 
     def add_variables(self, variables):
         command = self.Command('add_variables', variables=variables)
-        self.__commands.append(command)
-
-    def add_file_block(self, fileid, contents):
-        command = self.Command('add_file_block', fileid=fileid, contents=contents)
         self.__commands.append(command)

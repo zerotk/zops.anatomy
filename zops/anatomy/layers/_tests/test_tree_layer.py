@@ -9,15 +9,13 @@ import os
 def test_anatomy_file(datadir):
 
     # Prepare
-    f = AnatomyFile('gitignore')
-    f.add_block(
+    f = AnatomyFile(
+        'gitignore',
         """
             a
             b
         """
     )
-    f.add_block('c\nd\n')
-    f.add_block('e\nf')
 
     # Execute
     f.apply(datadir, variables={})
@@ -28,17 +26,12 @@ def test_anatomy_file(datadir):
         """
             a
             b
-            c
-            d
-            e
-            f
         """
     )
 
 
 def test_anatomy_file_with_filenames_using_variables(datadir):
-    f = AnatomyFile("{{filename}}")
-    f.add_block('This is alpha.')
+    f = AnatomyFile("{{filename}}", 'This is alpha.')
     f.apply(datadir, variables={'filename': 'alpha.txt'})
     assert_file_contents(
         datadir + '/alpha.txt',
@@ -49,8 +42,7 @@ def test_anatomy_file_with_filenames_using_variables(datadir):
 
 
 def test_anatomy_file_replace_filename_with_variable(datadir):
-    f = AnatomyFile("alpha.txt")
-    f.add_block('This is alpha.')
+    f = AnatomyFile("alpha.txt", 'This is alpha.')
     f.apply(datadir, variables={}, filename='zulu.txt')
     assert not os.path.isfile(datadir + '/alpha.txt')
     assert_file_contents(
@@ -65,8 +57,8 @@ def test_anatomy_tree(datadir):
 
     # Prepare
     tree = AnatomyTree()
-    tree['.gitignore'].add_block('line 1')
-    tree['.gitignore'].add_block('line 2')
+    tree.create_file('gitignore', '.gitignore', 'line 1\n{% for i in gitignore.blocks %}{{ i }}{% endfor %}\n')
+    tree.add_variables(dict(gitignore=dict(blocks=['line 2'])))
 
     # Execute
     tree.apply(datadir)
@@ -85,7 +77,7 @@ def test_anatomy_tree_with_variables(datadir):
 
     # Prepare
     tree = AnatomyTree()
-    tree['alpha.txt'].add_block('This is {{ name }}.')
+    tree.create_file('alpha', 'alpha.txt', 'This is {{ name }}.')
 
     # Without defined variables
     with pytest.raises(RuntimeError):

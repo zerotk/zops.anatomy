@@ -32,7 +32,8 @@ class AnatomyPlaybook(object):
         return result
 
     def use_feature(self, feature_name):
-        self.__features[feature_name] = AnatomyFeatureRegistry.get(feature_name)
+        feature = AnatomyFeatureRegistry.get(feature_name)
+        self.__features[feature_name] = feature
 
     def set_variable(self, key, value):
         """

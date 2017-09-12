@@ -128,20 +128,17 @@ class AnatomyTree(object):
                 filename = None
             i_file.apply(directory, variables=dd, filename=filename)
 
-    def create_file(self, fileid, filename, contents, variables=None):
+    def create_file(self, filename, contents):
         """
         Create a new file in this tree.
 
-        :param str fileid:
         :param str filename:
         :param str contents:
-        :param dict variables:
         """
-        if fileid in self.__files:
-            raise FileExistsError(fileid)
+        if filename in self.__files:
+            raise FileExistsError(filename)
 
-        self.__files[fileid] = AnatomyFile(filename, contents)
-        self.__variables[fileid] = variables or OrderedDict()
+        self.__files[filename] = AnatomyFile(filename, contents)
 
     def add_variables(self, variables, left_join=True):
         """

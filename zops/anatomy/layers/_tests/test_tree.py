@@ -57,8 +57,8 @@ def test_anatomy_tree(datadir):
 
     # Prepare
     tree = AnatomyTree()
-    tree.create_file('gitignore', '.gitignore', 'line 1\n{% for i in gitignore.blocks %}{{ i }}{% endfor %}\n')
-    tree.add_variables(dict(gitignore=dict(blocks=['line 2'])))
+    tree.create_file('.gitignore', 'line 1\n{% for i in gitignore.blocks %}{{ i }}{% endfor %}\n')
+    tree.add_variables(dict(gitignore=dict(blocks=['line 2'])), left_join=False)
 
     # Execute
     tree.apply(datadir)
@@ -77,7 +77,7 @@ def test_anatomy_tree_with_variables(datadir):
 
     # Prepare
     tree = AnatomyTree()
-    tree.create_file('alpha', 'alpha.txt', 'This is {{ name }}.')
+    tree.create_file('alpha.txt', 'This is {{ name }}.')
 
     # Without defined variables
     with pytest.raises(RuntimeError):

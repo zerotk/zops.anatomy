@@ -81,9 +81,8 @@ class AnatomyFeatureRegistry(object):
         """
         result = []
         for i_name, i_feature in cls.feature_registry.items():
-            for j_command in i_feature.commands:
-                if j_command.command == 'create_file':
-                    result.append((i_name, j_command.kwargs['fileid'], j_command.kwargs['filename']))
+            if i_feature.filename:
+                result.append((i_name, i_feature.filename, i_feature.filename))
         return result
 
 
@@ -119,27 +118,8 @@ class IAnatomyFeature(object):
 
 class AnatomyFeature(IAnatomyFeature):
 
-    class TreeCommand(object):
-
-        def __init__(self, command, **kwargs):
-            self.command = command
-            self.kwargs = kwargs
-
-        def __call__(self, tree):
-            func = getattr(tree, self.command)
-            return func(**self.kwargs)
-
-        def __str__(self):
-            return '{}({})'.format(
-                self.command,
-                ', '.join(
-                    ['{}={}'.format(*i) for i in self.kwargs.items()]
-                )
-            )
-
     def __init__(self, name, variables=None, use_features=None):
         super(AnatomyFeature, self).__init__(name)
-        self.__commands = []
         self.__variables = OrderedDict()
         self.__variables[name] = variables or OrderedDict()
         self.__use_features = use_features or OrderedDict()
@@ -155,27 +135,18 @@ class AnatomyFeature(IAnatomyFeature):
 
         create_file = contents.pop('create-file', None)
         if create_file:
-            result.creating_file(create_file.pop('filename'), create_file.pop('contents'))
+            result.create_file(create_file.pop('filename'), create_file.pop('contents'))
             if create_file.keys():
                 raise KeyError(create_file.keys())
-
-        # TODO: Remove on v2.0
-        commands = contents.pop('commands', [])
-        for j_command in commands:
-
-            command = j_command.pop('command', None)
-            assert commands is not None, "Missing 'command' entry."
-
-            if command == 'create-file':
-                result.create_file(**j_command)
-
-            elif command == 'add-variables':
-                result.add_variables(**j_command)
 
         if contents.keys():
             raise KeyError(contents.keys())
 
         return result
+
+    @property
+    def filename(self):
+        return self.__filename
 
     def apply(self, tree):
         """
@@ -183,27 +154,8 @@ class AnatomyFeature(IAnatomyFeature):
         """
         tree.add_variables(self.__use_features, left_join=True)
         if self.__filename:
-            tree.create_file(
-                fileid=self.name,
-                filename=self.__filename,
-                contents=self.__contents,
-                variables={}
-            )
-
-        # TODO: Remove on v2.0
+            tree.create_file(self.__filename, self.__contents)
         tree.add_variables(self.__variables, left_join=False)
-        for i_command in self.__commands:
-            i_command(tree)
-
-    @property
-    def commands(self):
-        return self.__commands
-
-    def list_commands(self):
-        """
-        List commands as strings for testing.
-        """
-        return [str(i) for i in self.__commands]
 
     def using_features(self, features):
         for i_name, i_vars in self.__use_features.items():
@@ -216,16 +168,6 @@ class AnatomyFeature(IAnatomyFeature):
         else:
             assert id(feature) == id(self)
 
-    def creating_file(self, filename, contents):
+    def create_file(self, filename, contents):
         self.__filename = filename
         self.__contents = contents
-
-    # Commands
-
-    def create_file(self, fileid, filename, contents, variables=None):
-        command = self.TreeCommand('create_file', fileid=fileid, filename=filename, contents=contents, variables=variables)
-        self.__commands.append(command)
-
-    def add_variables(self, variables):
-        command = self.TreeCommand('add_variables', variables=variables)
-        self.__commands.append(command)

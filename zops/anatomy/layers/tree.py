@@ -77,7 +77,7 @@ class AnatomyFile(object):
 
 
 def _create_file(filename, contents):
-    contents.rstrip('\n')
+    contents = contents.rstrip('\n')
     contents += '\n'
     os.makedirs(os.path.dirname(filename), exist_ok=True)
     try:
@@ -85,18 +85,6 @@ def _create_file(filename, contents):
             oss.write(contents)
     except Exception as e:
         raise RuntimeError(e)
-
-# class AnatomyFileBlock(object):
-#     """
-#     An anatomy-file is composed by many blocks. This class represents one of these blocks.
-#     """
-#
-#     def __init__(self, contents):
-#         self.__contents = contents
-#
-#     def as_text(self, variables):
-#         result = TemplateEngine.get().expand(self.__contents, variables)
-#         return result
 
 
 class AnatomyTree(object):
@@ -129,8 +117,6 @@ class AnatomyTree(object):
         :param str directory:
         :param dict variables:
         """
-        from jinja2 import UndefinedError
-
         dd = self.__variables.copy()
         if variables is not None:
             dd = merge_dict(dd, variables)
@@ -170,7 +156,6 @@ class AnatomyTree(object):
 
 
 def merge_dict(a, b, left_join=True):
-    import itertools
 
     def merge_value(v1, v2):
         if v2 is None:

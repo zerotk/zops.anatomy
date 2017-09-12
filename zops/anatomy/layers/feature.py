@@ -187,7 +187,7 @@ class AnatomyFeature(IAnatomyFeature):
         for i_name, i_vars in self.__use_features.items():
             feature = AnatomyFeatureRegistry.get(i_name)
             feature.using_features(features)
-        print('using anatomy-feature {} ({})'.format(self.name, id(self)))
+        # DEBUGGING: print('using anatomy-feature {} ({})'.format(self.name, id(self)))
         feature = features.get(self.name)
         if feature is None:
             features[self.name] = self

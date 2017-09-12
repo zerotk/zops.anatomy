@@ -11,13 +11,11 @@ def test_success(anatomy_checker):
             anatomy-features:
               - name: ALPHA
                 variables:
-                    name: Alpha
-                commands:
-                  - command: create-file
-                    fileid: alphatxt
-                    filename: alpha.txt
-                    contents: |
-                        This is {{ ALPHA.name }}.
+                  name: Alpha
+                create-file:
+                  filename: alpha.txt
+                  contents: |
+                    This is {{ ALPHA.name }}.
             anatomy-playbook:
                 use-features:
                     - ALPHA
@@ -42,12 +40,10 @@ def test_invalid_key(anatomy_checker):
                       - two
                     variables:
                       name: Alpha
-                    commands:
-                      - command: create-file
-                        fileid: alphatxt
-                        filename: alpha.txt
-                        contents: |
-                          This is {{ ALPHA.name }}.
+                    create-file:
+                      filename: alpha.txt
+                      contents: |
+                        This is {{ ALPHA.name }}.
                 anatomy-playbook:
                     use-features:
                       - ALPHA
@@ -69,12 +65,10 @@ def test_undefined_variable(anatomy_checker):
                   - name: ALPHA
                     variables:
                         name: Alpha
-                    commands:
-                      - command: create-file
-                        fileid: alphatxt
-                        filename: alpha.txt
-                        contents: |
-                            This is {{ UNDEFINED }}.
+                    create-file:
+                      filename: alpha.txt
+                      contents: |
+                        This is {{ UNDEFINED }}.
                 anatomy-playbook:
                     use-features:
                         - ALPHA
@@ -91,19 +85,15 @@ def test_use_features(anatomy_checker):
         """
             anatomy-features:
               - name: ALPHA
-                commands:
-                  - command: create-file
-                    fileid: alphatxt
-                    filename: alpha.txt
-                    contents: |
-                      This is Alpha.
+                create-file:
+                  filename: alpha.txt
+                  contents: |
+                    This is Alpha.
               - name: BRAVO
-                commands:
-                  - command: create-file
-                    fileid: bravotxt
-                    filename: bravo.txt
-                    contents: |
-                      This is Bravo.
+                create-file:
+                  filename: bravo.txt
+                  contents: |
+                    This is Bravo.
               - name: ZULU
                 use-features:
                   ALPHA: {}
@@ -131,12 +121,10 @@ def test_use_features_override_variables(anatomy_checker):
               - name: ALPHA
                 variables:
                   name: Alpha
-                commands:
-                  - command: create-file
-                    fileid: alphatxt
-                    filename: alpha.txt
-                    contents: |
-                      This is {{ ALPHA.name }}.
+                create-file:
+                  filename: alpha.txt
+                  contents: |
+                    This is {{ ALPHA.name }}.
               - name: BRAVO
                 use-features:
                   ALPHA:
@@ -163,12 +151,10 @@ def test_use_features_override_variables(anatomy_checker):
               - name: ALPHA
                 variables:
                   name: Alpha
-                commands:
-                  - command: create-file
-                    fileid: alphatxt
-                    filename: alpha.txt
-                    contents: |
-                      This is {{ ALPHA.name }}.
+                create-file:
+                  filename: alpha.txt
+                  contents: |
+                    This is {{ ALPHA.name }}.
               - name: BRAVO
                 use-features:
                   ALPHA:
@@ -198,12 +184,10 @@ def test_use_features_variables(anatomy_checker):
               - name: ALPHA
                 variables:
                   name: Alpha
-                commands:
-                  - command: create-file
-                    fileid: alphatxt
-                    filename: alpha.txt
-                    contents: |
-                      This is {{ ALPHA.name }}.
+                create-file:
+                  filename: alpha.txt
+                  contents: |
+                    This is {{ ALPHA.name }}.
               - name: ZULU
                 use-features:
                   ALPHA:
@@ -223,12 +207,10 @@ def test_use_features_variables(anatomy_checker):
               - name: ALPHA
                 variables:
                   name: Alpha
-                commands:
-                  - command: create-file
-                    fileid: alphatxt
-                    filename: alpha.txt
-                    contents: |
-                      This is {{ ALPHA.name }}.
+                create-file:
+                  filename: alpha.txt
+                  contents: |
+                    This is {{ ALPHA.name }}.
               - name: ZULU
                 use-features:
                   ALPHA:
@@ -251,21 +233,17 @@ def test_use_features_duplicate(anatomy_checker):
         """
             anatomy-features:
               - name: ALPHA
-                commands:
-                  - command: create-file
-                    fileid: alphatxt
-                    filename: alpha.txt
-                    contents: |
-                      This is Alpha.
+                create-file:
+                  filename: alpha.txt
+                  contents: |
+                    This is Alpha.
               - name: BRAVO
                 use-features:
                   ALPHA: {}
-                commands:
-                  - command: create-file
-                    fileid: bravotxt
-                    filename: bravo.txt
-                    contents: |
-                      This is Bravo.
+                create-file:
+                  filename: bravo.txt
+                  contents: |
+                    This is Bravo.
               - name: ZULU
                 use-features:
                   ALPHA: {}

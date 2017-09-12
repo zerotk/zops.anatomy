@@ -62,28 +62,8 @@ class AnatomyFeatureRegistry(object):
     @classmethod
     def register_from_contents(cls, contents):
         for i_feature in contents['anatomy-features']:
-            name = i_feature.pop('name')
-
-            variables = i_feature.pop('variables', OrderedDict())
-            use_features = i_feature.pop('use-features', None)
-            feature = AnatomyFeature(name, variables, use_features)
-
-            commands = i_feature.pop('commands', [])
-            for j_command in commands:
-
-                command = j_command.pop('command', None)
-                assert commands is not None, "Missing 'command' entry."
-
-                if command == 'create-file':
-                    feature.create_file(**j_command)
-
-                elif command == 'add-variables':
-                    feature.add_variables(**j_command)
-
-            if i_feature.keys():
-                raise KeyError(i_feature.keys())
-
-            cls.register(name, feature)
+            feature = AnatomyFeature.from_contents(i_feature)
+            cls.register(feature.name, feature)
 
     @classmethod
     def tree(cls):
@@ -163,12 +143,54 @@ class AnatomyFeature(IAnatomyFeature):
         self.__variables = OrderedDict()
         self.__variables[name] = variables or OrderedDict()
         self.__use_features = use_features or OrderedDict()
+        self.__filename = None
+        self.__contents = None
+
+    @classmethod
+    def from_contents(cls, contents):
+        name = contents.pop('name')
+        variables = contents.pop('variables', OrderedDict())
+        use_features = contents.pop('use-features', None)
+        result = AnatomyFeature(name, variables, use_features)
+
+        create_file = contents.pop('create-file', None)
+        if create_file:
+            result.creating_file(create_file.pop('filename'), create_file.pop('contents'))
+            if create_file.keys():
+                raise KeyError(create_file.keys())
+
+        # TODO: Remove on v2.0
+        commands = contents.pop('commands', [])
+        for j_command in commands:
+
+            command = j_command.pop('command', None)
+            assert commands is not None, "Missing 'command' entry."
+
+            if command == 'create-file':
+                result.create_file(**j_command)
+
+            elif command == 'add-variables':
+                result.add_variables(**j_command)
+
+        if contents.keys():
+            raise KeyError(contents.keys())
+
+        return result
 
     def apply(self, tree):
         """
         Implements AnatomyFeature.apply.
         """
         tree.add_variables(self.__use_features, left_join=True)
+        if self.__filename:
+            tree.create_file(
+                fileid=self.name,
+                filename=self.__filename,
+                contents=self.__contents,
+                variables={}
+            )
+
+        # TODO: Remove on v2.0
         tree.add_variables(self.__variables, left_join=False)
         for i_command in self.__commands:
             i_command(tree)
@@ -193,6 +215,10 @@ class AnatomyFeature(IAnatomyFeature):
             features[self.name] = self
         else:
             assert id(feature) == id(self)
+
+    def creating_file(self, filename, contents):
+        self.__filename = filename
+        self.__contents = contents
 
     # Commands
 

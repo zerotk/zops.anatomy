@@ -1,7 +1,7 @@
 from munch import Munch
 
 from zops.anatomy.layers.feature import AnatomyFeatureRegistry, FeatureNotFound
-from zops.anatomy.yaml import yaml_fom_file
+from zops.anatomy.yaml import yaml_from_file
 
 
 class AnatomyPlaybook(object):
@@ -15,7 +15,7 @@ class AnatomyPlaybook(object):
 
     @classmethod
     def from_file(cls, filename):
-        contents = yaml_fom_file(filename)
+        contents = yaml_from_file(filename)
         result = cls.from_contents(contents)
         return result
 

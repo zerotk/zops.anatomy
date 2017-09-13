@@ -45,9 +45,9 @@ class AnatomyFeatureRegistry(object):
 
     @classmethod
     def register_from_file(cls, filename):
-        from zops.anatomy.yaml import yaml_fom_file
+        from zops.anatomy.yaml import yaml_from_file
 
-        contents = yaml_fom_file(filename)
+        contents = yaml_from_file(filename)
         return cls.register_from_contents(contents)
 
     @classmethod

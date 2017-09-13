@@ -1,4 +1,5 @@
 import pytest
+from ruamel.yaml.constructor import DuplicateKeyError
 
 from zops.anatomy.assertions import assert_file_contents
 from zops.anatomy.layers.feature import AnatomyFeatureRegistry
@@ -73,6 +74,37 @@ def test_undefined_variable(anatomy_checker):
                     use-features:
                         - ALPHA
                 target: {}
+            """
+        )
+
+
+def test_duplicate_key(anatomy_checker):
+    """
+    Duplicate key.
+    """
+    with pytest.raises(DuplicateKeyError):
+        anatomy_checker.check(
+            """
+                anatomy-features:
+                  - name: ALPHA
+                    variables:
+                      name: Alpha
+                    create-file:
+                      filename: alpha.txt
+                      contents: |
+                        This is {{ ALPHA.name }}.
+                    create-file:
+                      filename: bravo.txt
+                      contents: |
+                        This is {{ ALPHA.name }}.
+                anatomy-playbook:
+                    use-features:
+                      - ALPHA
+                target:
+                    alpha.txt: |
+                      This is Alpha.
+                    bravo.txt: |
+                      This is Alpha.
             """
         )
 

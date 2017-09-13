@@ -38,13 +38,16 @@ setup(
         'zerotk.zops',
         'munch',
         'jinja2',
-        'pyaml',
+        # 'ruamel.pyaml',
         'yamlordereddictloader',
     ],
     dependency_links=[
     ],
     setup_requires=['setuptools_scm'],
-    tests_require=[],
+    tests_require=[
+        'pytest',
+        'datadiff',
+    ],
 
     license="MIT license",
 )

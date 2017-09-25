@@ -9,13 +9,16 @@ def yaml_from_file(filename_):
 
 def yaml_load(text):
     from ruamel.yaml import YAML
-    from ruamel.yaml import SafeConstructor
     from collections import OrderedDict
 
-    class OrderedConstructor(SafeConstructor):
-
-        MappingType = OrderedDict
-
     loader = YAML(typ='safe')
-    loader.Constructor = OrderedConstructor
+    loader.representer.mapping_type = OrderedDict
+
+    # from ruamel.yaml import SafeConstructor
+    # class OrderedConstructor(SafeConstructor):
+    #
+    #     MappingType = OrderedDict
+
+    # loader.Constructor = OrderedConstructor
+
     return loader.load(text)

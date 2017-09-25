@@ -32,6 +32,7 @@ class TemplateEngine(object):
         )
 
         def expandit(text_):
+            text_ = str(text_)
             template_ = env.from_string(text_, template_class=Template)
             return template_.render(**variables)
 

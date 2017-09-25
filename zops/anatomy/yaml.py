@@ -12,13 +12,5 @@ def yaml_load(text):
     from collections import OrderedDict
 
     loader = YAML(typ='safe')
-    loader.representer.mapping_type = OrderedDict
-
-    # from ruamel.yaml import SafeConstructor
-    # class OrderedConstructor(SafeConstructor):
-    #
-    #     MappingType = OrderedDict
-
-    # loader.Constructor = OrderedConstructor
-
+    loader.constructor.mapping_type = OrderedDict
     return loader.load(text)

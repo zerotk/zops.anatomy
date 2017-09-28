@@ -7,10 +7,15 @@ def yaml_from_file(filename_):
     return result
 
 
+# def yaml_load(text):
+#     import yaml
+#     import yamlordereddictloader
+#
+#     return yaml.load(text, Loader=yamlordereddictloader.Loader)
+
+
 def yaml_load(text):
     from ruamel.yaml import YAML
-    from collections import OrderedDict
 
-    loader = YAML(typ='safe')
-    loader.constructor.mapping_type = OrderedDict
-    return loader.load(text)
+    yaml = YAML()
+    return yaml.load(text)

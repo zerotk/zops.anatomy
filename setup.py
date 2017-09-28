@@ -36,10 +36,8 @@ setup(
     """,
     install_requires=[
         'zerotk.zops',
-        'munch',
+        'ruamel.yaml',
         'jinja2',
-        # 'ruamel.pyaml',
-        'yamlordereddictloader',
     ],
     dependency_links=[
     ],

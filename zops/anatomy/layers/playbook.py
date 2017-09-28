@@ -1,7 +1,7 @@
-from munch import Munch
-
-from zops.anatomy.layers.feature import AnatomyFeatureRegistry, FeatureNotFound
+from zops.anatomy.layers.feature import AnatomyFeatureRegistry
 from zops.anatomy.yaml import yaml_from_file
+
+from collections import OrderedDict
 
 
 class AnatomyPlaybook(object):
@@ -10,7 +10,7 @@ class AnatomyPlaybook(object):
     """
 
     def __init__(self):
-        self.__features = {}
+        self.__features = OrderedDict()
         self.__variables = {}
 
     @classmethod
@@ -35,9 +35,6 @@ class AnatomyPlaybook(object):
 
     def __set_variable(self, key, value):
         """
-
-        NOTE: Not sure we should handle dictionary values to Munch here.
-
         :param str key:
         :param object value:
         """

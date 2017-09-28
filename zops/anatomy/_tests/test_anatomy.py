@@ -18,8 +18,8 @@ def test_success(anatomy_checker):
                   contents: |
                     This is {{ ALPHA.name }}.
             anatomy-playbook:
-                use-features:
-                    - ALPHA
+              use-features:
+                ALPHA: {}
             target:
                 alpha.txt: |
                     This is Alpha.
@@ -46,8 +46,8 @@ def test_invalid_key(anatomy_checker):
                       contents: |
                         This is {{ ALPHA.name }}.
                 anatomy-playbook:
-                    use-features:
-                      - ALPHA
+                  use-features:
+                    ALPHA: {}
                 target:
                     alpha.txt: |
                       This is Alpha.
@@ -71,8 +71,8 @@ def test_undefined_variable(anatomy_checker):
                       contents: |
                         This is {{ UNDEFINED }}.
                 anatomy-playbook:
-                    use-features:
-                        - ALPHA
+                  use-features:
+                    ALPHA: {}
                 target: {}
             """
         )
@@ -98,8 +98,8 @@ def test_duplicate_key(anatomy_checker):
                       contents: |
                         This is {{ ALPHA.name }}.
                 anatomy-playbook:
-                    use-features:
-                      - ALPHA
+                  use-features:
+                    ALPHA: {}
                 target:
                     alpha.txt: |
                       This is Alpha.
@@ -131,8 +131,8 @@ def test_use_features(anatomy_checker):
                   ALPHA: {}
                   BRAVO: {}
             anatomy-playbook:
-                use-features:
-                  - ZULU
+              use-features:
+                ZULU: {}
             target:
               alpha.txt: |
                 This is Alpha.
@@ -170,8 +170,8 @@ def test_use_features_override_variables(anatomy_checker):
                   BRAVO: {}
                   CHARLIE: {}
             anatomy-playbook:
-                use-features:
-                  - ZULU
+              use-features:
+                ZULU: {}
             target:
               alpha.txt: |
                 This is Charlie.
@@ -200,8 +200,8 @@ def test_use_features_override_variables(anatomy_checker):
                   CHARLIE: {}
                   BRAVO: {}
             anatomy-playbook:
-                use-features:
-                  - ZULU
+              use-features:
+                ZULU: {}
             target:
               alpha.txt: |
                 This is Bravo.
@@ -225,8 +225,8 @@ def test_use_features_variables(anatomy_checker):
                   ALPHA:
                     name: Zulu
             anatomy-playbook:
-                use-features:
-                  - ZULU
+              use-features:
+                ZULU: {}
             target:
               alpha.txt: |
                 This is Zulu.
@@ -248,11 +248,10 @@ def test_use_features_variables(anatomy_checker):
                   ALPHA:
                     name: Zulu
             anatomy-playbook:
-                use-features:
-                  - ZULU
-                variables:
-                  ALPHA:
-                    name: Playbook
+              use-features:
+                ALPHA:
+                  name: Playbook
+                ZULU: {}
             target:
               alpha.txt: |
                 This is Playbook.
@@ -281,8 +280,8 @@ def test_use_features_duplicate(anatomy_checker):
                   ALPHA: {}
                   BRAVO: {}
             anatomy-playbook:
-                use-features:
-                  - ZULU
+              use-features:
+                ZULU: {}
             target:
               alpha.txt: |
                 This is Alpha.
@@ -290,6 +289,25 @@ def test_use_features_duplicate(anatomy_checker):
                 This is Bravo.
         """
     )
+
+
+def test_use_features_is_dict(anatomy_checker):
+    """
+    Raise an error if use-features is a list.
+    """
+    with pytest.raises(TypeError):
+        anatomy_checker.check(
+            """
+                anatomy-features:
+                  - name: ALPHA
+                    variables:
+                        name: Alpha
+                anatomy-playbook:
+                  use-features:
+                    - ALPHA
+                target: {}
+            """
+        )
 
 
 @pytest.fixture

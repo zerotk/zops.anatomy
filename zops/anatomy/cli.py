@@ -24,8 +24,12 @@ def tree(ctx):
 
     items = AnatomyFeatureRegistry.tree()
     items = sorted([('/' not in filename, filename, fileid, feature) for (feature, fileid, filename) in items])
+
+    column_width = max([len(i[3]) for i in items])
+    item_format = '{{:{}}}  {{}}'.format(column_width)
+
     for _priority, i_filename, i_fileid, i_feature in items:
-        Console.item(i_filename)
+        Console.item(item_format.format(i_feature, i_filename))
 
 
 @main.command()

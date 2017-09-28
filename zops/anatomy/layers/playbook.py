@@ -23,10 +23,13 @@ class AnatomyPlaybook(object):
     def from_contents(cls, contents):
         result = cls()
         contents = contents.pop('anatomy-playbook', contents)
-        for i_feature in contents.pop('use-features'):
-            result.__use_feature(i_feature)
-        for i_key, i_value in contents.pop('variables', {}).items():
-            result.__set_variable(i_key, i_value)
+        use_features = contents.pop('use-features')
+        if not isinstance(use_features, dict):
+            raise TypeError('Use-features must be a dict not "{}"'.format(use_features.__class__))
+        if isinstance(use_features, dict):
+            for i_feature, i_variables in use_features.items():
+                result.__use_feature(i_feature)
+                result.__set_variable(i_feature, i_variables)
         return result
 
     def __use_feature(self, feature_name):

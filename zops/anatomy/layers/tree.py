@@ -153,27 +153,37 @@ class AnatomyTree(object):
         self.__variables = merge_dict(self.__variables, variables, left_join=left_join)
 
 
-def merge_dict(a, b, left_join=True):
+def merge_dict(d1, d2, left_join=True):
+    """
+
+    :param dict d1:
+    :param dict d2:
+    :return:
+    """
+    return _merge_dict(d1, d2, depth=0, left_join=left_join)
+
+
+def _merge_dict(d1, d2, depth=0, left_join=True):
 
     def merge_value(v1, v2):
         if v2 is None:
             return v1
         elif isinstance(v1, dict):
-            return merge_dict(v1, v2, left_join=False)
+            return _merge_dict(v1, v2, depth=depth+1, left_join=left_join)
         elif isinstance(v1, (list, tuple)):
             return v1 + v2
         else:
             return v2
 
-    if left_join:
-        keys = a.keys()
-        right_keys = set(b.keys()).difference(set(a.keys()))
+    if left_join and depth < 2:
+        keys = d1.keys()
+        right_keys = set(d2.keys()).difference(set(d1.keys()))
         if right_keys:
             raise RuntimeError('Extra keys: {}'.format(right_keys))
     else:
-        keys = list(a.keys()) + [i for i in b.keys() if i not in a]
+        keys = list(d1.keys()) + [i for i in d2.keys() if i not in d1]
 
     result = OrderedDict()
     for i_key in keys:
-        result[i_key] = merge_value(a.get(i_key), b.get(i_key))
+        result[i_key] = merge_value(d1.get(i_key), d2.get(i_key))
     return result

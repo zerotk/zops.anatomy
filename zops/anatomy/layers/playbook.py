@@ -27,9 +27,9 @@ class AnatomyPlaybook(object):
         if not isinstance(use_features, dict):
             raise TypeError('Use-features must be a dict not "{}"'.format(use_features.__class__))
         if isinstance(use_features, dict):
-            for i_feature, i_variables in use_features.items():
-                result.__use_feature(i_feature)
-                result.__set_variable(i_feature, i_variables)
+            for i_feature_name, i_variables in use_features.items():
+                result.__use_feature(i_feature_name)
+                result.__set_variable(i_feature_name, i_variables)
         return result
 
     def __use_feature(self, feature_name):

@@ -29,7 +29,7 @@ def test_success(anatomy_checker):
 
 def test_invalid_key(anatomy_checker):
     """
-    Raise an error when a feature uses an invalid (YAML) key.
+    Raise an error when a feature uses an invalid (YAML) key for anatomy-features.
     """
     with pytest.raises(KeyError):
         anatomy_checker.check(
@@ -105,6 +105,32 @@ def test_duplicate_key(anatomy_checker):
                       This is Alpha.
                     bravo.txt: |
                       This is Alpha.
+            """
+        )
+
+
+def test_invalid_use_feature_key(anatomy_checker):
+    """
+    Invalid key when using a feature.
+    """
+    with pytest.raises(RuntimeError):
+        anatomy_checker.check(
+            """
+                anatomy-features:
+                  - name: ALPHA
+                    variables:
+                      name: Alpha
+                    create-file:
+                      filename: alpha.txt
+                      contents: |
+                        This is {{ ALPHA.name }}.
+                anatomy-playbook:
+                  use-features:
+                    ALPHA:
+                      invalid_key: 0
+                target:
+                    alpha.txt: |
+                        This is Alpha.
             """
         )
 

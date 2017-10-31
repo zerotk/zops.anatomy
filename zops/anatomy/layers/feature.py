@@ -125,6 +125,7 @@ class AnatomyFeature(IAnatomyFeature):
         self.__use_features = use_features or OrderedDict()
         self.__filename = None
         self.__contents = None
+        self.__executable = False
 
     @classmethod
     def from_contents(cls, contents):
@@ -135,7 +136,15 @@ class AnatomyFeature(IAnatomyFeature):
 
         create_file = contents.pop('create-file', None)
         if create_file:
-            result.create_file(create_file.pop('filename'), create_file.pop('contents'))
+            try:
+                executable = create_file.pop('executable')
+            except KeyError:
+                executable = False
+            result.create_file(
+                create_file.pop('filename'),
+                create_file.pop('contents'),
+                executable=executable,
+            )
             if create_file.keys():
                 raise KeyError(create_file.keys())
 
@@ -154,7 +163,7 @@ class AnatomyFeature(IAnatomyFeature):
         """
         tree.add_variables(self.__use_features, left_join=True)
         if self.__filename:
-            tree.create_file(self.__filename, self.__contents)
+            tree.create_file(self.__filename, self.__contents, executable=self.__executable)
         tree.add_variables(self.__variables, left_join=False)
 
     def using_features(self, features):
@@ -168,6 +177,7 @@ class AnatomyFeature(IAnatomyFeature):
         else:
             assert id(feature) == id(self)
 
-    def create_file(self, filename, contents):
+    def create_file(self, filename, contents, executable=False):
         self.__filename = filename
         self.__contents = contents
+        self.__executable = executable

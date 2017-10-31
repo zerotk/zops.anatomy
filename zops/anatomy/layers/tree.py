@@ -43,7 +43,7 @@ class TemplateEngine(object):
 
 class AnatomyFile(object):
     """
-    Implements an abstraction of a file composed by blocks.
+    Implements a file.
 
     Usage:
         f = AnatomyFile('filename.txt', 'first line')
@@ -77,11 +77,9 @@ class AnatomyFile(object):
 
         self._create_file(filename, contents)
         if self.__executable:
-            self._make_executable(filename)
+            AnatomyFile.make_executable(filename)
 
-    @staticmethod
-    def _create_file(filename, contents):
-
+    def _create_file(self, filename, contents):
         contents = contents.rstrip('\n')
         contents += '\n'
         os.makedirs(os.path.dirname(filename), exist_ok=True)
@@ -91,10 +89,58 @@ class AnatomyFile(object):
         except Exception as e:
             raise RuntimeError(e)
 
-    def _make_executable(self, path):
+    @staticmethod
+    def make_executable(path):
         mode = os.stat(path).st_mode
         mode |= (mode & 0o444) >> 2  # copy R bits to X
         os.chmod(path, mode)
+
+
+class AnatomySymlink(object):
+
+    def __init__(self, filename, symlink, executable=False):
+        self.__filename = filename
+        self.__symlink = symlink
+        self.__executable = executable
+
+    def apply(self, directory, variables, filename=None):
+        """
+        Create the file using all registered blocks.
+        Expand variables in all blocks.
+
+        :param directory:
+        :param variables:
+        :return:
+        """
+        expand = TemplateEngine.get().expand
+
+        filename = filename or self.__filename
+        filename = os.path.join(directory, filename)
+        filename = expand(filename, variables)
+
+        symlink = os.path.join(os.path.dirname(filename), self.__symlink)
+        assert os.path.isfile(symlink), "Can't find symlink destination file: {}".format(symlink)
+
+        self._create_symlink(filename, symlink)
+        if self.__executable:
+            AnatomyFile.make_executable(filename)
+
+    @staticmethod
+    def _create_symlink(filename, symlink):
+
+        os.makedirs(os.path.dirname(filename), exist_ok=True)
+        try:
+            if os.path.isfile(filename) or os.path.islink(filename):
+                os.unlink(filename)
+
+            # Create a symlink with a relative path (not absolute)
+            path = os.path.normpath(symlink)
+            start = os.path.normpath(os.path.dirname(filename))
+            symlink = os.path.relpath(path, start)
+
+            os.symlink(symlink, filename)
+        except Exception as e:
+            raise RuntimeError(e)
 
 
 class AnatomyTree(object):
@@ -149,6 +195,18 @@ class AnatomyTree(object):
             raise FileExistsError(filename)
 
         self.__files[filename] = AnatomyFile(filename, contents, executable=executable)
+
+    def create_link(self, filename, symlink, executable=False):
+        """
+        Create a new symlink in this tree.
+
+        :param str filename:
+        :param str symlink:
+        """
+        if filename in self.__files:
+            raise FileExistsError(filename)
+
+        self.__files[filename] = AnatomySymlink(filename, symlink, executable=executable)
 
     def add_variables(self, variables, left_join=True):
         """

@@ -125,10 +125,18 @@ class AnatomyFeature(IAnatomyFeature):
         self.__use_features = use_features or OrderedDict()
         self.__filename = None
         self.__contents = None
+        self.__symlink = None
         self.__executable = False
 
     @classmethod
     def from_contents(cls, contents):
+
+        def optional_pop(dd, key, default):
+            try:
+                return dd.pop(key)
+            except KeyError:
+                return default
+
         name = contents.pop('name')
         variables = contents.pop('variables', OrderedDict())
         use_features = contents.pop('use-features', None)
@@ -136,20 +144,20 @@ class AnatomyFeature(IAnatomyFeature):
 
         create_file = contents.pop('create-file', None)
         if create_file:
-            try:
-                executable = create_file.pop('executable')
-            except KeyError:
-                executable = False
-            result.create_file(
-                create_file.pop('filename'),
-                create_file.pop('contents'),
-                executable=executable,
-            )
+            filename = create_file.pop('filename')
+            symlink = optional_pop(create_file, 'symlink', None)
+            executable = optional_pop(create_file, 'executable', False)
+            if symlink is not None:
+                result.create_link(filename, symlink, executable=executable)
+            else:
+                file_contents = create_file.pop('contents')
+                result.create_file(filename, file_contents, executable=executable)
+
             if create_file.keys():
-                raise KeyError(create_file.keys())
+                raise KeyError(list(create_file.keys()))
 
         if contents.keys():
-            raise KeyError(contents.keys())
+            raise KeyError(list(contents.keys()))
 
         return result
 
@@ -163,7 +171,10 @@ class AnatomyFeature(IAnatomyFeature):
         """
         tree.add_variables(self.__use_features, left_join=True)
         if self.__filename:
-            tree.create_file(self.__filename, self.__contents, executable=self.__executable)
+            if self.__contents:
+                tree.create_file(self.__filename, self.__contents, executable=self.__executable)
+            else:
+                tree.create_link(self.__filename, self.__symlink, executable=self.__executable)
         tree.add_variables(self.__variables, left_join=False)
 
     def using_features(self, features):
@@ -180,4 +191,11 @@ class AnatomyFeature(IAnatomyFeature):
     def create_file(self, filename, contents, executable=False):
         self.__filename = filename
         self.__contents = contents
+        self.__symlink = None
+        self.__executable = executable
+
+    def create_link(self, filename, symlink, executable=False):
+        self.__filename = filename
+        self.__contents = None
+        self.__symlink = symlink
         self.__executable = executable

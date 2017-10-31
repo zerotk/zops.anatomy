@@ -1,11 +1,7 @@
-# -*- coding: utf-8 -*-
 import os
 from zerotk.zops import Console
 
 import click
-
-
-ANATOMY_FILENAME = 'anatomy.yml'
 
 
 click.disable_unicode_literals_warning = True
@@ -51,6 +47,43 @@ def apply(ctx, directories):
         Console.title(i_directory)
         anatomy_playbook = AnatomyPlaybook.from_file(i_directory + '/anatomy-playbook.yml')
         anatomy_playbook.apply(i_directory)
+
+
+@main.command('auto-apply')
+@click.pass_context
+def auto_apply(ctx):
+    """
+    Apply templates automatically configuring:
+    * Features file
+    * Search for anatomy-playbook.yml recursively.
+    """
+
+    def find_all(name, path):
+        result = []
+        for root, dirs, files in os.walk(path):
+            if name in files:
+                result.append(os.path.join(root, name))
+        return result
+
+    def find_up(name, path):
+        directory = os.path.abspath(path)
+        while directory:
+            filename = os.path.join(directory, name)
+            if os.path.isfile(filename):
+                return filename
+            directory = os.path.dirname(directory)
+        return None
+
+    features_filename = find_up('anatomy-features.yml', '.')
+    if features_filename is None:
+        Console.info("Can't find features file: anatomy-features.yml.")
+        return 1
+    Console.info("{}: Features file.".format(features_filename))
+
+    playbook_filenames = find_all('anatomy-playbook.yml', '.')
+
+    os.environ['ZOPS_ANATOMY_FEATURES'] = features_filename
+    ctx.invoke(apply, directories=map(os.path.dirname, playbook_filenames))
 
 
 def _register_features():

@@ -50,9 +50,10 @@ class AnatomyFile(object):
         f.apply('directory')
     """
 
-    def __init__(self, filename, contents):
+    def __init__(self, filename, contents, executable=False):
         self.__filename = filename
         self.__contents = dedent(contents)
+        self.__executable = executable
 
     def apply(self, directory, variables, filename=None):
         """
@@ -75,9 +76,12 @@ class AnatomyFile(object):
             raise RuntimeError('ERROR: {}: {}'.format(filename, e))
 
         self._create_file(filename, contents)
+        if self.__executable:
+            self._make_executable(filename)
 
     @staticmethod
     def _create_file(filename, contents):
+
         contents = contents.rstrip('\n')
         contents += '\n'
         os.makedirs(os.path.dirname(filename), exist_ok=True)
@@ -86,6 +90,11 @@ class AnatomyFile(object):
                 oss.write(contents)
         except Exception as e:
             raise RuntimeError(e)
+
+    def _make_executable(self, path):
+        mode = os.stat(path).st_mode
+        mode |= (mode & 0o444) >> 2  # copy R bits to X
+        os.chmod(path, mode)
 
 
 class AnatomyTree(object):
@@ -129,7 +138,7 @@ class AnatomyTree(object):
                 filename = None
             i_file.apply(directory, variables=dd, filename=filename)
 
-    def create_file(self, filename, contents):
+    def create_file(self, filename, contents, executable=False):
         """
         Create a new file in this tree.
 
@@ -139,7 +148,7 @@ class AnatomyTree(object):
         if filename in self.__files:
             raise FileExistsError(filename)
 
-        self.__files[filename] = AnatomyFile(filename, contents)
+        self.__files[filename] = AnatomyFile(filename, contents, executable=executable)
 
     def add_variables(self, variables, left_join=True):
         """

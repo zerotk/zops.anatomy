@@ -30,6 +30,32 @@ def test_anatomy_file(datadir):
     )
 
 
+def test_anatomy_file_executable(datadir):
+
+    # Prepare
+    f = AnatomyFile(
+        'gitignore',
+        """
+            a
+            b
+        """,
+        executable=True
+    )
+
+    # Execute
+    f.apply(datadir, variables={})
+
+    # Check
+    assert_file_contents(
+        datadir + '/gitignore',
+        """
+            a
+            b
+        """
+    )
+    assert os.access(datadir + '/gitignore', os.X_OK)
+
+
 def test_anatomy_file_with_filenames_using_variables(datadir):
     f = AnatomyFile("{{filename}}", 'This is alpha.')
     f.apply(datadir, variables={'filename': 'alpha.txt'})
@@ -98,30 +124,26 @@ def test_anatomy_tree_with_variables(datadir):
 
 
 def test_merge_dict():
-    # We can add only KEYS that already exists on 'a'.
+
+    # Error if the right dict has keys that doesn't exist on the left dict...
+
+    # ... in the first level
     with pytest.raises(RuntimeError):
-        assert merge_dict(
-            dict(a=1),
-            dict(b=2)
-        )
+        merge_dict(dict(a=1), dict(z=9), left_join=True)
 
+    # ... in the second level
     with pytest.raises(RuntimeError):
-        assert merge_dict(
-            dict(a=1),
-            dict(b=2),
-            left_join=True
-        )
+        merge_dict(dict(a=dict(a=1)), dict(a=dict(z=9)), left_join=True)
 
+    # ... in the third level we ignore this differences.
     assert merge_dict(
-        dict(a=1),
-        dict(b=2),
-        left_join=False
-    ) == dict(a=1, b=2)
+        dict(a=dict(a=dict(a=1))),
+        dict(a=dict(a=dict(z=9)))
+    ) == dict(a=dict(a=dict(a=1, z=9)))
 
-    assert merge_dict(
-        dict(a=dict(a=1)),
-        dict(a=dict(b=2)),
-    ) == dict(a=dict(a=1, b=2))
+    # With left_join=False we ignore keys on the right dict that doesn't exist on the left dict.
+    assert merge_dict(dict(a=1), dict(b=2), left_join=False) == dict(a=1, b=2)
+
 
     assert merge_dict({'a': 1}, {'a': 2}) == {'a': 2}
     assert merge_dict({'a': [1]}, {'a': [2]}) == {'a': [1, 2]}

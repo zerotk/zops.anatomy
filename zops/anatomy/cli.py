@@ -57,22 +57,7 @@ def auto_apply(ctx):
     * Features file
     * Search for anatomy-playbook.yml recursively.
     """
-
-    def find_all(name, path):
-        result = []
-        for root, dirs, files in os.walk(path):
-            if name in files:
-                result.append(os.path.join(root, name))
-        return result
-
-    def find_up(name, path):
-        directory = os.path.abspath(path)
-        while directory:
-            filename = os.path.join(directory, name)
-            if os.path.isfile(filename):
-                return filename
-            directory = os.path.dirname(directory)
-        return None
+    from zerotk.lib.path import find_up, find_all
 
     features_filename = find_up('anatomy-features.yml', '.')
     if features_filename is None:

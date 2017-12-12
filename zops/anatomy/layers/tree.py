@@ -1,7 +1,7 @@
 import os
 
 from zops.anatomy.text import dedent
-from collections import OrderedDict
+from collections import OrderedDict, MutableMapping
 
 
 class UndefinedVariableInTemplate(KeyError):
@@ -37,6 +37,9 @@ class TemplateEngine(object):
             return template_.render(**variables)
 
         env.filters['expandit'] = expandit
+
+        from ansible.plugins.filter.core import combine
+        env.filters['combine'] = combine
         result = expandit(text)
         return result
 

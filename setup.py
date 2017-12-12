@@ -35,8 +35,9 @@ setup(
         main=zops.anatomy.cli:main
     """,
     install_requires=[
+        'ansible',  # Just to use the filter 'combine'.
+        'zerotk.lib',
         'zerotk.zops',
-        'ruamel.yaml',
         'jinja2',
     ],
     dependency_links=[

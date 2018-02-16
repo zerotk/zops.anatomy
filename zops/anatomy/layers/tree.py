@@ -35,11 +35,30 @@ class TemplateEngine(object):
             text_ = str(text_)
             template_ = env.from_string(text_, template_class=Template)
             return template_.render(**variables)
-
         env.filters['expandit'] = expandit
+
+        def dashcase(text_):
+            result = ''
+            for i, i_char in enumerate(str(text_)):
+                r = i_char.lower()
+                if i > 0 and i_char.isupper():
+                    result += '-'
+                result += r
+            return result
+        env.filters['dashcase'] = dashcase
+
+        def dmustache(text_):
+            return '{{' + str(text_) + '}}'
+        env.filters['dmustache'] = dmustache
+
+        import stringcase
+        env.filters['camelcase'] = stringcase.camelcase
+        env.filters['spinalcase'] = stringcase.spinalcase
+        env.filters['pascalcase'] = stringcase.pascalcase
 
         from ansible.plugins.filter.core import combine
         env.filters['combine'] = combine
+
         result = expandit(text)
         return result
 
@@ -245,6 +264,9 @@ def _merge_dict(d1, d2, depth=0, left_join=True):
         else:
             return v2
 
+    assert isinstance(d1, dict), 'Parameter d1 must be a dict, not {}'.format(d1.__class__)
+    assert isinstance(d2, dict), 'Parameter d2 must be a dict, not {}'.format(d2.__class__)
+
     if left_join and depth < 2:
         keys = d1.keys()
         right_keys = set(d2.keys()).difference(set(d1.keys()))
@@ -255,5 +277,9 @@ def _merge_dict(d1, d2, depth=0, left_join=True):
 
     result = OrderedDict()
     for i_key in keys:
-        result[i_key] = merge_value(d1.get(i_key), d2.get(i_key))
+        try:
+            result[i_key] = merge_value(d1.get(i_key), d2.get(i_key))
+        except AssertionError as e:
+            print('While merging value for key {}'.format(i_key))
+            raise
     return result

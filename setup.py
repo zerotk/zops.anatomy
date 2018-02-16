@@ -39,6 +39,7 @@ setup(
         'zerotk.lib',
         'zerotk.zops',
         'jinja2',
+        'stringcase',
     ],
     dependency_links=[
     ],

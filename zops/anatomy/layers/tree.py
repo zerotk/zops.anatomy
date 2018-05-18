@@ -268,8 +268,8 @@ def _merge_dict(d1, d2, depth=0, left_join=True):
         else:
             return v2
 
-    assert isinstance(d1, dict), 'Parameter d1 must be a dict, not {}'.format(d1.__class__)
-    assert isinstance(d2, dict), 'Parameter d2 must be a dict, not {}'.format(d2.__class__)
+    assert isinstance(d1, dict), 'Parameter d1 must be a dict, not {}. d1={}'.format(d1.__class__, d1)
+    assert isinstance(d2, dict), 'Parameter d2 must be a dict, not {}. d2={}'.format(d2.__class__, d2)
 
     if left_join and depth < 2:
         keys = d1.keys()

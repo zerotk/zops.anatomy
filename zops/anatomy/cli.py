@@ -58,6 +58,7 @@ def auto_apply(ctx):
     * Search for anatomy-playbook.yml recursively.
     """
     from zerotk.lib.path import find_up, find_all
+    from zerotk.lib.gitignored import GitIgnored
 
     features_filename = find_up('anatomy-features.yml', '.')
     if features_filename is None:
@@ -66,6 +67,7 @@ def auto_apply(ctx):
     Console.info("{}: Features file.".format(features_filename))
 
     playbook_filenames = find_all('anatomy-playbook.yml', '.')
+    playbook_filenames = GitIgnored().filter(playbook_filenames)
 
     os.environ['ZOPS_ANATOMY_FEATURES'] = features_filename
     ctx.invoke(apply, directories=map(os.path.dirname, playbook_filenames))

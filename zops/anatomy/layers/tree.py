@@ -31,6 +31,10 @@ class TemplateEngine(object):
             undefined=StrictUndefined
         )
 
+        def is_empty(text_):
+            return not bool(expandit(text_).strip())
+        env.tests['empty'] = is_empty
+
         def expandit(text_):
             text_ = str(text_)
             template_ = env.from_string(text_, template_class=Template)

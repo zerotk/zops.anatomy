@@ -364,7 +364,7 @@ def anatomy_checker(datadir):
 
 
 def _to_contents(seed):
-    from zops.anatomy.yaml import yaml_load
-    from zops.anatomy.text import dedent
+    from zerotk.lib.yaml import yaml_load
+    from zerotk.lib.text import dedent
 
     return yaml_load(dedent(seed))

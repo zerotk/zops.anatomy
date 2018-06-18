@@ -1,6 +1,6 @@
 import os
 
-from zops.anatomy.text import dedent
+from zerotk.lib.text import dedent
 from collections import OrderedDict, MutableMapping
 
 
@@ -22,8 +22,8 @@ class TemplateEngine(object):
         return cls.__singleton
 
     def expand(self, text, variables):
-
         from jinja2 import Environment, Template, StrictUndefined
+
         env = Environment(
             trim_blocks=True,
             lstrip_blocks=True,
@@ -60,7 +60,58 @@ class TemplateEngine(object):
         env.filters['spinalcase'] = stringcase.spinalcase
         env.filters['pascalcase'] = stringcase.pascalcase
 
-        from ansible.plugins.filter.core import combine
+        def combine(*terms, **kwargs):
+            """
+            NOTE: Copied from ansible.
+            """
+            import itertools
+            from functools import reduce
+
+            def merge_hash(a, b):
+                """
+                Recursively merges hash b into a so that keys from b take precedence over keys from a
+
+                NOTE: Copied from ansible.
+                """
+
+                # if a is empty or equal to b, return b
+                if a == {} or a == b:
+                    return b.copy()
+
+                # if b is empty the below unfolds quickly
+                result = a.copy()
+
+                # next, iterate over b keys and values
+                for k, v in b.items():
+                    # if there's already such key in a
+                    # and that key contains a MutableMapping
+                    if k in result and isinstance(result[k], MutableMapping) and isinstance(v, MutableMapping):
+                        # merge those dicts recursively
+                        result[k] = merge_hash(result[k], v)
+                    else:
+                        # otherwise, just copy the value from b to a
+                        result[k] = v
+
+                return result
+
+            recursive = kwargs.get('recursive', False)
+            if len(kwargs) > 1 or (len(kwargs) == 1 and 'recursive' not in kwargs):
+                raise RuntimeError("'recursive' is the only valid keyword argument")
+
+            dicts = []
+            for t in terms:
+                if isinstance(t, MutableMapping):
+                    dicts.append(t)
+                elif isinstance(t, list):
+                    dicts.append(combine(*t, **kwargs))
+                else:
+                    raise RuntimeError("|combine expects dictionaries, got " + repr(t))
+
+            if recursive:
+                return reduce(merge_hash, dicts)
+            else:
+                return dict(itertools.chain(*map(lambda x: x.items(), dicts)))
+
         env.filters['combine'] = combine
 
         result = expandit(text)

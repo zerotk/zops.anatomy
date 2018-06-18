@@ -1,7 +1,7 @@
 
 
 def assert_file_contents(filename, expected):
-    from zops.anatomy.text import dedent
+    from zerotk.lib.text import dedent
     from datadiff.tools import assert_equal
     import os
 

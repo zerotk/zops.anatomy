@@ -1,5 +1,5 @@
 from zops.anatomy.layers.feature import AnatomyFeatureRegistry
-from zops.anatomy.yaml import yaml_from_file
+from zerotk.lib.yaml import yaml_from_file
 
 from collections import OrderedDict
 

@@ -309,9 +309,11 @@ def merge_dict(d1, d2, left_join=True):
 
 def _merge_dict(d1, d2, depth=0, left_join=True):
 
-    def merge_value(v1, v2):
+    def merge_value(v1, v2, override=False):
         if v2 is None:
             return v1
+        elif override:
+            return v2
         elif isinstance(v1, dict):
             return _merge_dict(v1, v2, depth=depth+1, left_join=left_join)
         elif isinstance(v1, (list, tuple)):
@@ -322,18 +324,25 @@ def _merge_dict(d1, d2, depth=0, left_join=True):
     assert isinstance(d1, dict), 'Parameter d1 must be a dict, not {}. d1={}'.format(d1.__class__, d1)
     assert isinstance(d2, dict), 'Parameter d2 must be a dict, not {}. d2={}'.format(d2.__class__, d2)
 
+    d2_cleaned = {i.rstrip('!'): j for (i,j) in d2.items()}
+
     if left_join and depth < 2:
         keys = d1.keys()
-        right_keys = set(d2.keys()).difference(set(d1.keys()))
+        right_keys = set(d2_cleaned.keys())
+        right_keys = right_keys.difference(set(d1.keys()))
         if right_keys:
             raise RuntimeError('Extra keys: {}'.format(right_keys))
     else:
-        keys = list(d1.keys()) + [i for i in d2.keys() if i not in d1]
+        keys = list(d1.keys()) + [i for i in d2_cleaned.keys() if i not in d1]
 
     result = OrderedDict()
     for i_key in keys:
         try:
-            result[i_key] = merge_value(d1.get(i_key), d2.get(i_key))
+            result[i_key] = merge_value(
+                d1.get(i_key),
+                d2_cleaned.get(i_key),
+                override=i_key + '!' in d2
+            )
         except AssertionError as e:
             print('While merging value for key {}'.format(i_key))
             raise

@@ -1,4 +1,5 @@
 import os
+from os.path import dirname
 from zerotk.zops import Console
 
 import click
@@ -13,13 +14,18 @@ def main():
 
 
 @main.command('tree')
+@click.option('--features-file', default=None, envvar="ZOPS_ANATOMY_FEATURES")
 @click.pass_context
-def tree(ctx):
+def tree(ctx, features_file):
     from zops.anatomy.layers.feature import AnatomyFeatureRegistry
-    _register_features()
+
+    _register_features(features_file)
 
     items = AnatomyFeatureRegistry.tree()
-    items = sorted([('/' not in filename, filename, fileid, feature) for (feature, fileid, filename) in items])
+    items = sorted([
+        ('/' not in filename, filename, fileid, feature)
+        for (feature, fileid, filename) in items
+    ])
 
     column_width = max([len(i[3]) for i in items])
     item_format = '{{:{}}}  {{}}'.format(column_width)
@@ -29,51 +35,57 @@ def tree(ctx):
 
 
 @main.command()
-@click.argument('directories', nargs=-1)
+@click.argument('directory')
+@click.option('--features-file', default=None, envvar="ZOPS_ANATOMY_FEATURES")
+@click.option('--recursive', '-m', is_flag=True)
 @click.pass_context
-def apply(ctx, directories):
+def apply(ctx, directory, features_file, recursive):
     """
     Apply templates.
     """
     from .layers.playbook import AnatomyPlaybook
 
-    _register_features()
+    directory = os.path.abspath(directory)
 
-    if not directories:
-        directories = ('.',)
-    directories = [os.path.abspath(i) for i in directories]
-
-    for i_directory in directories:
-        Console.title(i_directory)
-        anatomy_playbook = AnatomyPlaybook.from_file(i_directory + '/anatomy-playbook.yml')
-        anatomy_playbook.apply(i_directory)
+    if recursive:
+        playbook_filenames = find_all('anatomy-playbook.yml', directory)
+        playbook_filenames = GitIgnored().filter(playbook_filenames)
+    else:
+        playbook_filenames = [directory + '/anatomy-playbook.yml']
 
 
-@main.command('auto-apply')
-@click.pass_context
-def auto_apply(ctx):
-    """
-    Apply templates automatically configuring:
-    * Features file
-    * Search for anatomy-playbook.yml recursively.
-    """
-    from zerotk.lib.path import find_up, find_all
-    from zerotk.lib.gitignored import GitIgnored
+    for i_filename in playbook_filenames:
+        features_file = features_file or _find_features_file(dirname(i_filename))
 
-    features_filename = find_up('anatomy-features.yml', '.')
-    if features_filename is None:
-        Console.info("Can't find features file: anatomy-features.yml.")
-        return 1
-    Console.info("{}: Features file.".format(features_filename))
+        _register_features(features_file)
 
-    playbook_filenames = find_all('anatomy-playbook.yml', '.')
-    playbook_filenames = GitIgnored().filter(playbook_filenames)
-
-    os.environ['ZOPS_ANATOMY_FEATURES'] = features_filename
-    ctx.invoke(apply, directories=map(os.path.dirname, playbook_filenames))
+        Console.title(directory)
+        anatomy_playbook = AnatomyPlaybook.from_file(i_filename)
+        anatomy_playbook.apply(directory)
 
 
-def _register_features():
+def _find_features_file(path):
+    from zerotk.lib.path import find_up
+
+    SEARCH_FILENAMES = [
+        'anatomy-features/anatomy-features.yml',
+        'anatomy-features.yml',
+    ]
+
+    for i_filename in SEARCH_FILENAMES:
+        result = find_up(i_filename, path)
+        if result is not None:
+            break
+
+    if result is None:
+        Console.error("Can't find features file: anatomy-features.yml.")
+        raise SystemError(1)
+
+    Console.info("Features filename:", result)
+    return result
+
+
+def _register_features(filename):
     from .layers.feature import AnatomyFeatureRegistry
-    filename = os.environ['ZOPS_ANATOMY_FEATURES']
+
     AnatomyFeatureRegistry.register_from_file(filename)

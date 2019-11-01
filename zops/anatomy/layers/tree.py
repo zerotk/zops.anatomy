@@ -55,6 +55,16 @@ class TemplateEngine(object):
             return '{{' + str(text_) + '}}'
         env.filters['dmustache'] = dmustache
 
+        def to_json(text_):
+            if isinstance(text_, bool):
+                return 'true' if text_ else 'false'
+            if isinstance(text_, list):
+                return '[' + ', '.join([to_json(i) for i in text_]) + ']'
+            if isinstance(text_, (int, float)):
+                return str(text_)
+            return '\"{}\"'.format(text_)
+        env.filters['to_json'] = to_json
+
         import stringcase
         env.filters['camelcase'] = stringcase.camelcase
         env.filters['spinalcase'] = stringcase.spinalcase
@@ -295,6 +305,9 @@ class AnatomyTree(object):
             variables dictionary.
         """
         self.__variables = merge_dict(self.__variables, variables, left_join=left_join)
+
+    def evaluate(self, text):
+        return eval(text, self.__variables)
 
 
 def merge_dict(d1, d2, left_join=True):

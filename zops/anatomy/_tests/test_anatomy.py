@@ -1,3 +1,4 @@
+import os
 import pytest
 from ruamel.yaml.constructor import DuplicateKeyError
 
@@ -336,6 +337,40 @@ def test_use_features_is_dict(anatomy_checker):
         )
 
 
+@pytest.mark.xfail
+def test_use_features_condition(anatomy_checker):
+    """
+    Testing condition attribute.
+    """
+    anatomy_checker.check(
+        """
+            anatomy-features:
+              - name: PROJECT
+                variables:
+                  python: alpha
+              - name: ALPHA
+                create-file:
+                  filename: alpha.txt
+                  contents: |
+                    This is Alpha.
+              - name: BRAVO
+                condition: PROJECT.python == 'alpha'
+                create-file:
+                  filename: bravo.txt
+                  contents: |
+                    This is Bravo.
+            anatomy-playbook:
+              use-features:
+                ALPHA: {}
+                BRAVO: {}
+            target:
+              alpha.txt: |
+                This is Alpha.
+              bravo.txt: "!"
+        """
+    )
+
+
 @pytest.fixture
 def anatomy_checker(datadir):
 
@@ -355,10 +390,14 @@ def anatomy_checker(datadir):
             playbook.apply(target_dir)
 
             for i_filename, i_expected in contents['target'].items():
-                assert_file_contents(
-                    target_dir.join(i_filename),
-                    i_expected
-                )
+                if i_expected.strip() == '!':
+                    assert not os.path.isfile(target_dir.join(i_filename)), \
+                        "File exists: {}".format(i_filename)
+                else:
+                    assert_file_contents(
+                        target_dir.join(i_filename),
+                        i_expected
+                    )
 
     return AnatomyChecker()
 

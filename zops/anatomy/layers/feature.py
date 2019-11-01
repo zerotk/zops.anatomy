@@ -118,8 +118,11 @@ class IAnatomyFeature(object):
 
 class AnatomyFeature(IAnatomyFeature):
 
-    def __init__(self, name, variables=None, use_features=None):
+    def __init__(
+        self, name, variables=None, use_features=None, condition='True'
+    ):
         super(AnatomyFeature, self).__init__(name)
+        self.__condition = condition
         self.__variables = OrderedDict()
         self.__variables[name] = variables or OrderedDict()
         self.__use_features = use_features or OrderedDict()
@@ -127,6 +130,9 @@ class AnatomyFeature(IAnatomyFeature):
         self.__contents = None
         self.__symlink = None
         self.__executable = False
+
+    def is_enabled(self):
+        return True
 
     @classmethod
     def from_contents(cls, contents):
@@ -138,10 +144,12 @@ class AnatomyFeature(IAnatomyFeature):
                 return default
 
         name = contents.pop('name')
+        condition = contents.pop('condition', 'True')
         variables = contents.pop('variables', OrderedDict())
         use_features = contents.pop('use-features', None)
-        result = AnatomyFeature(name, variables, use_features)
-
+        result = AnatomyFeature(
+            name, variables, use_features, condition=condition
+        )
         create_file = contents.pop('create-file', None)
         if create_file:
             filename = create_file.pop('filename')
@@ -170,12 +178,15 @@ class AnatomyFeature(IAnatomyFeature):
         Implements AnatomyFeature.apply.
         """
         tree.add_variables(self.__use_features, left_join=True)
-        if self.__filename:
+        tree.add_variables(self.__variables, left_join=False)
+
+        result = self.is_enabled()
+        if result and self.__filename:
             if self.__contents:
                 tree.create_file(self.__filename, self.__contents, executable=self.__executable)
             else:
                 tree.create_link(self.__filename, self.__symlink, executable=self.__executable)
-        tree.add_variables(self.__variables, left_join=False)
+        return result
 
     def using_features(self, features):
         for i_name, i_vars in self.__use_features.items():

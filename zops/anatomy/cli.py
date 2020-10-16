@@ -37,22 +37,23 @@ def tree(ctx, features_file):
 @main.command()
 @click.argument('directory')
 @click.option('--features-file', default=None, envvar="ZOPS_ANATOMY_FEATURES")
-@click.option('--recursive', '-m', is_flag=True)
+@click.option('--playbook-file', default=None)
+@click.option('--recursive', '-r', is_flag=True)
 @click.pass_context
-def apply(ctx, directory, features_file, recursive):
+def apply(ctx, directory, features_file, playbook_file, recursive):
     """
     Apply templates.
     """
     from .layers.playbook import AnatomyPlaybook
 
-    directory = os.path.abspath(directory)
-
-    if recursive:
+    if playbook_file is not None:
+        playbook_filenames = [playbook_file]
+    elif recursive:
+        directory = os.path.abspath(directory)
         playbook_filenames = find_all('anatomy-playbook.yml', directory)
         playbook_filenames = GitIgnored().filter(playbook_filenames)
     else:
         playbook_filenames = [directory + '/anatomy-playbook.yml']
-
 
     for i_filename in playbook_filenames:
         features_file = features_file or _find_features_file(dirname(i_filename))

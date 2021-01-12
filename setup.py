@@ -4,50 +4,43 @@
 from setuptools import setup
 
 setup(
-    name='zops.anatomy',
+    name="zops.anatomy",
     use_scm_version=True,
-
     author="Alexandre Andrade",
-    author_email='kaniabi@gmail.com',
-
-    url='https://github.com/zerotk/zops.anatomy',
-
+    author_email="kaniabi@gmail.com",
+    url="https://github.com/zerotk/zops.anatomy",
     description="Apply and maintain projects templates.",
     long_description="Apply and maintain projects templates.",
-
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
-        'Intended Audience :: Developers',
-        'License :: OSI Approved :: MIT License',
-        'Natural Language :: English',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.5',
+        "Development Status :: 2 - Pre-Alpha",
+        "Intended Audience :: Developers",
+        "License :: OSI Approved :: MIT License",
+        "Natural Language :: English",
+        "Programming Language :: Python :: 2",
+        "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.5",
     ],
-    keywords='development environment, shell, operations',
-
+    keywords="development environment, shell, operations",
     include_package_data=True,
-    packages=['zops', 'zops.anatomy'],
-    namespace_packages=['zops'],
+    packages=["zops", "zops.anatomy"],
+    namespace_packages=["zops"],
     entry_points="""
         [zops.plugins]
         main=zops.anatomy.cli:main
     """,
     install_requires=[
-        'ansible',  # Just to use the filter 'combine'.
-        'zerotk.lib',
-        'zerotk.zops',
-        'jinja2',
-        'stringcase',
+        "ansible",  # Just to use the filter 'combine'.
+        "zerotk.lib",
+        "zerotk.zops",
+        "jinja2",
+        "stringcase",
     ],
-    dependency_links=[
-    ],
-    setup_requires=['setuptools_scm'],
+    dependency_links=[],
+    setup_requires=["setuptools_scm"],
     tests_require=[
-        'pytest',
-        'datadiff',
+        "pytest",
+        "datadiff",
     ],
-
     license="MIT license",
 )

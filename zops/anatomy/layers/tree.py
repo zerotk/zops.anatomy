@@ -2,6 +2,7 @@ import os
 
 from zerotk.lib.text import dedent
 from collections import OrderedDict, MutableMapping
+import distutils.util
 
 
 class UndefinedVariableInTemplate(KeyError):
@@ -28,47 +29,71 @@ class TemplateEngine(object):
             trim_blocks=True,
             lstrip_blocks=True,
             keep_trailing_newline=True,
-            undefined=StrictUndefined
+            undefined=StrictUndefined,
         )
 
         def is_empty(text_):
             return not bool(expandit(text_).strip())
-        env.tests['empty'] = is_empty
+
+        env.tests["empty"] = is_empty
 
         def expandit(text_):
-            text_ = str(text_)
-            template_ = env.from_string(text_, template_class=Template)
-            return template_.render(**variables)
-        env.filters['expandit'] = expandit
+            before = None
+            result = str(text_)
+            while before != result:
+                before = result
+                result = env.from_string(result, template_class=Template).render(
+                    **variables
+                )
+            return result
+
+        env.filters["expandit"] = expandit
 
         def dashcase(text_):
-            result = ''
+            result = ""
             for i, i_char in enumerate(str(text_)):
                 r = i_char.lower()
                 if i > 0 and i_char.isupper():
-                    result += '-'
+                    result += "-"
                 result += r
             return result
-        env.filters['dashcase'] = dashcase
+
+        env.filters["dashcase"] = dashcase
 
         def dmustache(text_):
-            return '{{' + str(text_) + '}}'
-        env.filters['dmustache'] = dmustache
+            return "{{" + str(text_) + "}}"
+
+        env.filters["dmustache"] = dmustache
 
         def to_json(text_):
             if isinstance(text_, bool):
-                return 'true' if text_ else 'false'
+                return "true" if text_ else "false"
             if isinstance(text_, list):
-                return '[' + ', '.join([to_json(i) for i in text_]) + ']'
+                return "[" + ", ".join([to_json(i) for i in text_]) + "]"
             if isinstance(text_, (int, float)):
                 return str(text_)
-            return '\"{}\"'.format(text_)
-        env.filters['to_json'] = to_json
+            return '"{}"'.format(text_)
+
+        env.filters["to_json"] = to_json
 
         import stringcase
-        env.filters['camelcase'] = stringcase.camelcase
-        env.filters['spinalcase'] = stringcase.spinalcase
-        env.filters['pascalcase'] = stringcase.pascalcase
+
+        env.filters["camelcase"] = stringcase.camelcase
+        env.filters["spinalcase"] = stringcase.spinalcase
+        env.filters["pascalcase"] = stringcase.pascalcase
+
+        def is_enabled(o):
+            result = o.get("enabled", None)
+            if result is None:
+                return True
+            # result = f"{{{{ {result} }}}}"
+            result = env.from_string(result, template_class=Template).render(
+                **variables
+            )
+            result = bool(distutils.util.strtobool(result))
+            return result
+
+        env.filters["is_enabled"] = is_enabled
 
         def combine(*terms, **kwargs):
             """
@@ -95,7 +120,11 @@ class TemplateEngine(object):
                 for k, v in b.items():
                     # if there's already such key in a
                     # and that key contains a MutableMapping
-                    if k in result and isinstance(result[k], MutableMapping) and isinstance(v, MutableMapping):
+                    if (
+                        k in result
+                        and isinstance(result[k], MutableMapping)
+                        and isinstance(v, MutableMapping)
+                    ):
                         # merge those dicts recursively
                         result[k] = merge_hash(result[k], v)
                     else:
@@ -104,8 +133,8 @@ class TemplateEngine(object):
 
                 return result
 
-            recursive = kwargs.get('recursive', False)
-            if len(kwargs) > 1 or (len(kwargs) == 1 and 'recursive' not in kwargs):
+            recursive = kwargs.get("recursive", False)
+            if len(kwargs) > 1 or (len(kwargs) == 1 and "recursive" not in kwargs):
                 raise RuntimeError("'recursive' is the only valid keyword argument")
 
             dicts = []
@@ -122,7 +151,7 @@ class TemplateEngine(object):
             else:
                 return dict(itertools.chain(*map(lambda x: x.items(), dicts)))
 
-        env.filters['combine'] = combine
+        env.filters["combine"] = combine
 
         result = expandit(text)
         return result
@@ -139,7 +168,7 @@ class AnatomyFile(object):
 
     def __init__(self, filename, contents, executable=False):
         self.__filename = filename
-        self.__contents = dedent(contents)
+        self.__content = dedent(contents)
         self.__executable = executable
 
     def apply(self, directory, variables, filename=None):
@@ -157,21 +186,30 @@ class AnatomyFile(object):
         filename = os.path.join(directory, filename)
         filename = expand(filename, variables)
 
-        try:
-            contents = expand(self.__contents, variables)
-        except Exception as e:
-            raise RuntimeError('ERROR: {}: {}'.format(filename, e))
+        if self.__content.startswith("!"):
+            content_filename = self.__content[1:]
+            template_filename = "{{ ANATOMY.templates_dir }}/{{ ANATOMY.template}}"
+            template_filename = f"{template_filename}/{content_filename}"
+            template_filename = expand(template_filename, variables)
+            content_filename = expand(template_filename, variables)
+            self.__content = open(content_filename).read()
 
-        self._create_file(filename, contents)
+        try:
+            content = expand(self.__content, variables)
+        except Exception as e:
+            raise RuntimeError("ERROR: {}: {}".format(filename, e))
+
+        self._create_file(filename, content)
         if self.__executable:
             AnatomyFile.make_executable(filename)
 
     def _create_file(self, filename, contents):
-        contents = contents.rstrip('\n')
-        contents += '\n'
+        contents = contents.replace(" \n", "\n")
+        contents = contents.rstrip("\n")
+        contents += "\n"
         os.makedirs(os.path.dirname(filename), exist_ok=True)
         try:
-            with open(filename, 'w') as oss:
+            with open(filename, "w") as oss:
                 oss.write(contents)
         except Exception as e:
             raise RuntimeError(e)
@@ -184,7 +222,6 @@ class AnatomyFile(object):
 
 
 class AnatomySymlink(object):
-
     def __init__(self, filename, symlink, executable=False):
         self.__filename = filename
         self.__symlink = symlink
@@ -206,7 +243,9 @@ class AnatomySymlink(object):
         filename = expand(filename, variables)
 
         symlink = os.path.join(os.path.dirname(filename), self.__symlink)
-        assert os.path.isfile(symlink), "Can't find symlink destination file: {}".format(symlink)
+        assert os.path.isfile(
+            symlink
+        ), "Can't find symlink destination file: {}".format(symlink)
 
         self._create_symlink(filename, symlink)
         if self.__executable:
@@ -266,7 +305,7 @@ class AnatomyTree(object):
 
         for i_fileid, i_file in self.__files.items():
             try:
-                filename = dd[i_fileid]['filename']
+                filename = dd[i_fileid]["filename"]
             except KeyError:
                 filename = None
             i_file.apply(directory, variables=dd, filename=filename)
@@ -293,7 +332,9 @@ class AnatomyTree(object):
         if filename in self.__files:
             raise FileExistsError(filename)
 
-        self.__files[filename] = AnatomySymlink(filename, symlink, executable=executable)
+        self.__files[filename] = AnatomySymlink(
+            filename, symlink, executable=executable
+        )
 
     def add_variables(self, variables, left_join=True):
         """
@@ -321,30 +362,33 @@ def merge_dict(d1, d2, left_join=True):
 
 
 def _merge_dict(d1, d2, depth=0, left_join=True):
-
     def merge_value(v1, v2, override=False):
         if v2 is None:
             return v1
         elif override:
             return v2
         elif isinstance(v1, dict):
-            return _merge_dict(v1, v2, depth=depth+1, left_join=left_join)
+            return _merge_dict(v1, v2, depth=depth + 1, left_join=left_join)
         elif isinstance(v1, (list, tuple)):
             return v1 + v2
         else:
             return v2
 
-    assert isinstance(d1, dict), 'Parameter d1 must be a dict, not {}. d1={}'.format(d1.__class__, d1)
-    assert isinstance(d2, dict), 'Parameter d2 must be a dict, not {}. d2={}'.format(d2.__class__, d2)
+    assert isinstance(d1, dict), "Parameter d1 must be a dict, not {}. d1={}".format(
+        d1.__class__, d1
+    )
+    assert isinstance(d2, dict), "Parameter d2 must be a dict, not {}. d2={}".format(
+        d2.__class__, d2
+    )
 
-    d2_cleaned = {i.rstrip('!'): j for (i,j) in d2.items()}
+    d2_cleaned = {i.rstrip("!"): j for (i, j) in d2.items()}
 
     if left_join and depth < 2:
         keys = d1.keys()
         right_keys = set(d2_cleaned.keys())
         right_keys = right_keys.difference(set(d1.keys()))
         if right_keys:
-            raise RuntimeError('Extra keys: {}'.format(right_keys))
+            raise RuntimeError("Extra keys: {}".format(right_keys))
     else:
         keys = list(d1.keys()) + [i for i in d2_cleaned.keys() if i not in d1]
 
@@ -352,11 +396,9 @@ def _merge_dict(d1, d2, depth=0, left_join=True):
     for i_key in keys:
         try:
             result[i_key] = merge_value(
-                d1.get(i_key),
-                d2_cleaned.get(i_key),
-                override=i_key + '!' in d2
+                d1.get(i_key), d2_cleaned.get(i_key), override=i_key + "!" in d2
             )
         except AssertionError as e:
-            print('While merging value for key {}'.format(i_key))
+            print("While merging value for key {}".format(i_key))
             raise
     return result

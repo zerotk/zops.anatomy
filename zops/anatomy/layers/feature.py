@@ -1,5 +1,7 @@
 from zops.anatomy.layers.tree import merge_dict
 from collections import OrderedDict
+import types
+import os
 
 
 class FeatureNotFound(KeyError):
@@ -44,11 +46,11 @@ class AnatomyFeatureRegistry(object):
         cls.feature_registry[feature_name] = feature
 
     @classmethod
-    def register_from_file(cls, filename):
+    def register_from_file(cls, filename, templates_dir):
         from zerotk.lib.yaml import yaml_from_file
 
         contents = yaml_from_file(filename)
-        return cls.register_from_contents(contents)
+        return cls.register_from_contents(contents, templates_dir)
 
     @classmethod
     def register_from_text(cls, text):
@@ -60,8 +62,19 @@ class AnatomyFeatureRegistry(object):
         return cls.register_from_contents(contents)
 
     @classmethod
-    def register_from_contents(cls, contents):
-        for i_feature in contents['anatomy-features']:
+    def register_from_contents(cls, contents, templates_dir):
+        feature = AnatomyFeature.from_contents(
+            {
+                "name": "ANATOMY",
+                "variables": {
+                    "templates_dir": templates_dir,
+                    "template": "application",
+                },
+            },
+        )
+        cls.register(feature.name, feature)
+
+        for i_feature in contents["anatomy-features"]:
             feature = AnatomyFeature.from_contents(i_feature)
             cls.register(feature.name, feature)
 
@@ -117,11 +130,8 @@ class IAnatomyFeature(object):
 
 
 class AnatomyFeature(IAnatomyFeature):
-
-    def __init__(
-        self, name, variables=None, use_features=None, condition='True'
-    ):
-        super(AnatomyFeature, self).__init__(name)
+    def __init__(self, name, variables=None, use_features=None, condition="True"):
+        super().__init__(name)
         self.__condition = condition
         self.__variables = OrderedDict()
         self.__variables[name] = variables or OrderedDict()
@@ -131,34 +141,35 @@ class AnatomyFeature(IAnatomyFeature):
         self.__symlink = None
         self.__executable = False
 
-    def is_enabled(self):
+    def is_enabled(cls):
         return True
 
     @classmethod
     def from_contents(cls, contents):
-
         def optional_pop(dd, key, default):
             try:
                 return dd.pop(key)
             except KeyError:
                 return default
 
-        name = contents.pop('name')
-        condition = contents.pop('condition', 'True')
-        variables = contents.pop('variables', OrderedDict())
-        use_features = contents.pop('use-features', None)
-        result = AnatomyFeature(
-            name, variables, use_features, condition=condition
-        )
-        create_file = contents.pop('create-file', None)
+        name = contents.pop("name")
+        condition = contents.pop("condition", "True")
+        variables = contents.pop("variables", OrderedDict())
+        use_features = contents.pop("use-features", None)
+        result = AnatomyFeature(name, variables, use_features, condition=condition)
+        create_file = contents.pop("create-file", None)
         if create_file:
-            filename = create_file.pop('filename')
-            symlink = optional_pop(create_file, 'symlink', None)
-            executable = optional_pop(create_file, 'executable', False)
+            filename = create_file.pop("filename")
+            symlink = optional_pop(create_file, "symlink", None)
+            template = optional_pop(create_file, "template", None)
+            executable = optional_pop(create_file, "executable", False)
             if symlink is not None:
                 result.create_link(filename, symlink, executable=executable)
             else:
-                file_contents = create_file.pop('contents')
+                if template is not None:
+                    file_contents = f"!{template}"
+                else:
+                    file_contents = create_file.pop("contents")
                 result.create_file(filename, file_contents, executable=executable)
 
             if create_file.keys():
@@ -183,9 +194,13 @@ class AnatomyFeature(IAnatomyFeature):
         result = self.is_enabled()
         if result and self.__filename:
             if self.__contents:
-                tree.create_file(self.__filename, self.__contents, executable=self.__executable)
+                tree.create_file(
+                    self.__filename, self.__contents, executable=self.__executable
+                )
             else:
-                tree.create_link(self.__filename, self.__symlink, executable=self.__executable)
+                tree.create_link(
+                    self.__filename, self.__symlink, executable=self.__executable
+                )
         return result
 
     def using_features(self, features):

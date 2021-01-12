@@ -373,9 +373,7 @@ def test_use_features_condition(anatomy_checker):
 
 @pytest.fixture
 def anatomy_checker(datadir):
-
     class AnatomyChecker(object):
-
         def check(self, seed):
             if isinstance(seed, str):
                 contents = _to_contents(seed)
@@ -386,18 +384,16 @@ def anatomy_checker(datadir):
             AnatomyFeatureRegistry.clear()
             AnatomyFeatureRegistry.register_from_contents(contents)
             playbook = AnatomyPlaybook.from_contents(contents)
-            target_dir = datadir + '/target'
+            target_dir = datadir + "/target"
             playbook.apply(target_dir)
 
-            for i_filename, i_expected in contents['target'].items():
-                if i_expected.strip() == '!':
-                    assert not os.path.isfile(target_dir.join(i_filename)), \
-                        "File exists: {}".format(i_filename)
+            for i_filename, i_expected in contents["target"].items():
+                if i_expected.strip() == "!":
+                    assert not os.path.isfile(
+                        target_dir.join(i_filename)
+                    ), "File exists: {}".format(i_filename)
                 else:
-                    assert_file_contents(
-                        target_dir.join(i_filename),
-                        i_expected
-                    )
+                    assert_file_contents(target_dir.join(i_filename), i_expected)
 
     return AnatomyChecker()
 

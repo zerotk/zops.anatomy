@@ -8,69 +8,60 @@ import click
 click.disable_unicode_literals_warning = True
 
 
-@click.group('anatomy')
+@click.group("anatomy")
 def main():
     pass
 
 
-@main.command('tree')
-@click.option('--features-file', default=None, envvar="ZOPS_ANATOMY_FEATURES")
-@click.pass_context
-def tree(ctx, features_file):
-    from zops.anatomy.layers.feature import AnatomyFeatureRegistry
-
-    _register_features(features_file)
-
-    items = AnatomyFeatureRegistry.tree()
-    items = sorted([
-        ('/' not in filename, filename, fileid, feature)
-        for (feature, fileid, filename) in items
-    ])
-
-    column_width = max([len(i[3]) for i in items])
-    item_format = '{{:{}}}  {{}}'.format(column_width)
-
-    for _priority, i_filename, i_fileid, i_feature in items:
-        Console.item(item_format.format(i_feature, i_filename))
-
-
 @main.command()
-@click.argument('directory')
-@click.option('--features-file', default=None, envvar="ZOPS_ANATOMY_FEATURES")
-@click.option('--playbook-file', default=None)
-@click.option('--recursive', '-r', is_flag=True)
+@click.argument("directories", nargs=-1)
+@click.option("--features-file", default=None, envvar="ZOPS_ANATOMY_FEATURES")
+@click.option("--templates-dir", default=None, envvar="ZOPS_ANATOMY_TEMPLATES")
+@click.option("--playbook-file", default=None)
+@click.option("--recursive", "-r", is_flag=True)
 @click.pass_context
-def apply(ctx, directory, features_file, playbook_file, recursive):
+def apply(ctx, directories, features_file, templates_dir, playbook_file, recursive):
     """
     Apply templates.
     """
     from .layers.playbook import AnatomyPlaybook
+    from zerotk.lib.path import find_up
 
-    if playbook_file is not None:
-        playbook_filenames = [playbook_file]
-    elif recursive:
-        directory = os.path.abspath(directory)
-        playbook_filenames = find_all('anatomy-playbook.yml', directory)
-        playbook_filenames = GitIgnored().filter(playbook_filenames)
-    else:
-        playbook_filenames = [directory + '/anatomy-playbook.yml']
+    for i_directory in directories:
+        project_name = os.path.basename(os.path.abspath(i_directory))
+        project_playbook_filename = f"anatomy-features/playbooks/{project_name}.yml"
+        project_playbook_filename = find_up(project_playbook_filename, i_directory)
 
-    for i_filename in playbook_filenames:
-        features_file = features_file or _find_features_file(dirname(i_filename))
+        if playbook_file is not None:
+            playbook_filenames = [playbook_file]
+        elif os.path.exists(project_playbook_filename):
+            playbook_filenames = [project_playbook_filename]
+        elif recursive:
+            directory = os.path.abspath(i_directory)
+            playbook_filenames = find_all("anatomy-playbook.yml", directory)
+            playbook_filenames = GitIgnored().filter(playbook_filenames)
+        else:
+            playbook_filenames = [i_directory + "/anatomy-playbook.yml"]
 
-        _register_features(features_file)
+        for i_filename in playbook_filenames:
+            features_file = features_file or _find_features_file(dirname(i_filename))
+            templates_dir = templates_dir or os.path.join(
+                os.path.dirname(features_file), "templates"
+            )
+            Console.info(f"Apply {i_filename}")
+            _register_features(features_file, templates_dir)
 
-        Console.title(directory)
-        anatomy_playbook = AnatomyPlaybook.from_file(i_filename)
-        anatomy_playbook.apply(directory)
+            Console.title(i_directory)
+            anatomy_playbook = AnatomyPlaybook.from_file(i_filename)
+            anatomy_playbook.apply(i_directory)
 
 
 def _find_features_file(path):
     from zerotk.lib.path import find_up
 
     SEARCH_FILENAMES = [
-        'anatomy-features/anatomy-features.yml',
-        'anatomy-features.yml',
+        "anatomy-features/anatomy-features.yml",
+        "anatomy-features.yml",
     ]
 
     for i_filename in SEARCH_FILENAMES:
@@ -86,7 +77,8 @@ def _find_features_file(path):
     return result
 
 
-def _register_features(filename):
+def _register_features(filename, templates_dir):
     from .layers.feature import AnatomyFeatureRegistry
 
-    AnatomyFeatureRegistry.register_from_file(filename)
+    AnatomyFeatureRegistry.clear()
+    AnatomyFeatureRegistry.register_from_file(filename, templates_dir)

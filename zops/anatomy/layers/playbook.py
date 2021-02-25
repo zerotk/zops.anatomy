@@ -27,15 +27,16 @@ class AnatomyPlaybook(object):
     @classmethod
     def from_contents(cls, contents):
         result = cls()
-        result.__use_feature("ANATOMY")
+        result.__use_feature("ANATOMY", [])
         contents = contents.pop("anatomy-playbook", contents)
         use_features = contents.pop("use-features")
         if not isinstance(use_features, dict):
             raise TypeError(
                 'Use-features must be a dict not "{}"'.format(use_features.__class__)
             )
+        skip_features = contents.pop("skip-features", [])
         for i_feature_name, i_variables in use_features.items():
-            result.__use_feature(i_feature_name)
+            result.__use_feature(i_feature_name, skip_features)
             i_variables = cls._process_variables(i_variables)
             result.set_variables(i_feature_name, i_variables)
 
@@ -48,9 +49,9 @@ class AnatomyPlaybook(object):
     def _process_variables(cls, variables):
         return variables
 
-    def __use_feature(self, feature_name):
+    def __use_feature(self, feature_name, skipped):
         feature = AnatomyFeatureRegistry.get(feature_name)
-        feature.using_features(self.__features)
+        feature.using_features(self.__features, skipped)
 
     def set_variables(self, feature_name, variables):
         """

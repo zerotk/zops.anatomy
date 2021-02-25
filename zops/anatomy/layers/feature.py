@@ -140,9 +140,10 @@ class AnatomyFeature(IAnatomyFeature):
         self.__contents = None
         self.__symlink = None
         self.__executable = False
+        self.__enabled = True
 
-    def is_enabled(cls):
-        return True
+    def is_enabled(self):
+        return self.__enabled
 
     @classmethod
     def from_contents(cls, contents):
@@ -203,10 +204,11 @@ class AnatomyFeature(IAnatomyFeature):
                 )
         return result
 
-    def using_features(self, features):
+    def using_features(self, features, skipped):
+        self.__enabled = self.name not in skipped
         for i_name, i_vars in self.__use_features.items():
             feature = AnatomyFeatureRegistry.get(i_name)
-            feature.using_features(features)
+            feature.using_features(features, skipped)
         # DEBUGGING: print('using anatomy-feature {} ({})'.format(self.name, id(self)))
         feature = features.get(self.name)
         if feature is None:

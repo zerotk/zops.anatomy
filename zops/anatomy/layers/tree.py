@@ -65,6 +65,11 @@ class TemplateEngine(object):
 
         env.filters["dmustache"] = dmustache
 
+        def env_var(text_):
+            return "${" + str(text_) + "}"
+
+        env.filters["env_var"] = env_var
+
         def to_json(text_):
             if isinstance(text_, bool):
                 return "true" if text_ else "false"
@@ -86,7 +91,6 @@ class TemplateEngine(object):
             result = o.get("enabled", None)
             if result is None:
                 return True
-            # result = f"{{{{ {result} }}}}"
             result = env.from_string(result, template_class=Template).render(
                 **variables
             )
@@ -152,6 +156,31 @@ class TemplateEngine(object):
                 return dict(itertools.chain(*map(lambda x: x.items(), dicts)))
 
         env.filters["combine"] = combine
+
+        def dedup(lst, key):
+            """Remove duplicates from ta list of dictionaries."""
+            result = OrderedDict()
+            for i_dict in lst:
+                k = i_dict[key]
+                v = result.get(k, {})
+                v.update(i_dict)
+                result[k] = v
+            result = list(result.values())
+            return result
+
+        env.filters["dedup"] = dedup
+
+        def dfilteredkeys(dct, value):
+            """Filter dictionary list by the value."""
+            return [i_key for (i_key, i_value) in dct.items() if i_value == value]
+
+        env.filters["dfilteredkeys"] = dfilteredkeys
+
+        def dvalues(lst, key):
+            """In a list of dictionaries, for each item returns item["key"]."""
+            return [i.get(key) for i in lst]
+
+        env.filters["dvalues"] = dvalues
 
         result = expandit(text)
         return result

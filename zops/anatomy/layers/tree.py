@@ -22,14 +22,25 @@ class TemplateEngine(object):
             cls.__singleton = cls()
         return cls.__singleton
 
-    def expand(self, text, variables):
+    def expand(self, text, variables, alt_expansion=False):
         from jinja2 import Environment, Template, StrictUndefined
+
+        if alt_expansion:
+            kwargs = dict(
+                block_start_string="{{%",
+                block_end_string="%}}",
+                variable_start_string="{{{",
+                variable_end_string="}}}",
+            )
+        else:
+            kwargs = {}
 
         env = Environment(
             trim_blocks=True,
             lstrip_blocks=True,
             keep_trailing_newline=True,
             undefined=StrictUndefined,
+            **kwargs
         )
 
         def is_empty(text_):
@@ -66,7 +77,7 @@ class TemplateEngine(object):
         env.filters["dmustache"] = dmustache
 
         def env_var(text_):
-            return "${" + str(text_) + "}"
+            return "${" + expandit(text_) + "}"
 
         env.filters["env_var"] = env_var
 
@@ -223,8 +234,12 @@ class AnatomyFile(object):
             content_filename = expand(template_filename, variables)
             self.__content = open(content_filename).read()
 
+        # Use alternative variable/block expansion when working with Ansible
+        # file.
+        alt_expansion = filename.endswith("ansible.yml")
+
         try:
-            content = expand(self.__content, variables)
+            content = expand(self.__content, variables, alt_expansion)
         except Exception as e:
             raise RuntimeError("ERROR: {}: {}".format(filename, e))
 

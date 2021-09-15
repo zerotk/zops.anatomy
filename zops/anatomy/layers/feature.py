@@ -2,6 +2,7 @@ from zops.anatomy.layers.tree import merge_dict
 from collections import OrderedDict
 import types
 import os
+from dataclasses import dataclass
 
 
 class FeatureNotFound(KeyError):
@@ -130,17 +131,22 @@ class IAnatomyFeature(object):
 
 
 class AnatomyFeature(IAnatomyFeature):
+
+    @dataclass
+    class File:
+        filename: str
+        contents: str
+        symlink: str
+        executable: bool
+
     def __init__(self, name, variables=None, use_features=None, condition="True"):
         super().__init__(name)
         self.__condition = condition
         self.__variables = OrderedDict()
         self.__variables[name] = variables or OrderedDict()
         self.__use_features = use_features or OrderedDict()
-        self.__filename = None
-        self.__contents = None
-        self.__symlink = None
-        self.__executable = False
         self.__enabled = True
+        self.__files = []
 
     def is_enabled(self):
         return self.__enabled
@@ -158,23 +164,28 @@ class AnatomyFeature(IAnatomyFeature):
         variables = contents.pop("variables", OrderedDict())
         use_features = contents.pop("use-features", None)
         result = AnatomyFeature(name, variables, use_features, condition=condition)
+        create_files = contents.pop("create-files", [])
+
         create_file = contents.pop("create-file", None)
-        if create_file:
-            filename = create_file.pop("filename")
-            symlink = optional_pop(create_file, "symlink", None)
-            template = optional_pop(create_file, "template", None)
-            executable = optional_pop(create_file, "executable", False)
+        if create_file is not None:
+            create_files.append(create_file)
+
+        for i_create_file in create_files:
+            symlink = optional_pop(i_create_file, "symlink", None)
+            template = optional_pop(i_create_file, "template", None)
+            filename = i_create_file.pop("filename", template)
+            executable = optional_pop(i_create_file, "executable", False)
             if symlink is not None:
                 result.create_link(filename, symlink, executable=executable)
             else:
                 if template is not None:
                     file_contents = f"!{template}"
                 else:
-                    file_contents = create_file.pop("contents")
+                    file_contents = i_create_file.pop("contents")
                 result.create_file(filename, file_contents, executable=executable)
 
-            if create_file.keys():
-                raise KeyError(list(create_file.keys()))
+            if i_create_file.keys():
+                raise KeyError(list(i_create_file.keys()))
 
         if contents.keys():
             raise KeyError(list(contents.keys()))
@@ -183,7 +194,7 @@ class AnatomyFeature(IAnatomyFeature):
 
     @property
     def filename(self):
-        return self.__filename
+        raise NotImplementedError()
 
     def apply(self, tree):
         """
@@ -193,15 +204,16 @@ class AnatomyFeature(IAnatomyFeature):
         tree.add_variables(self.__variables, left_join=False)
 
         result = self.is_enabled()
-        if result and self.__filename:
-            if self.__contents:
-                tree.create_file(
-                    self.__filename, self.__contents, executable=self.__executable
-                )
-            else:
-                tree.create_link(
-                    self.__filename, self.__symlink, executable=self.__executable
-                )
+        if result and self.__files:
+            for i_file in self.__files:
+                if i_file.contents:
+                    tree.create_file(
+                        i_file.filename, i_file.contents, executable=i_file.executable
+                    )
+                else:
+                    tree.create_link(
+                        i_file.filename, i_file.symlink, executable=i_file.executable
+                    )
         return result
 
     def using_features(self, features, skipped):
@@ -217,13 +229,21 @@ class AnatomyFeature(IAnatomyFeature):
             assert id(feature) == id(self)
 
     def create_file(self, filename, contents, executable=False):
-        self.__filename = filename
-        self.__contents = contents
-        self.__symlink = None
-        self.__executable = executable
+        self.__files.append(
+            self.File(
+                filename = filename,
+                contents = contents,
+                symlink = None,
+                executable = executable
+            )
+        )
 
     def create_link(self, filename, symlink, executable=False):
-        self.__filename = filename
-        self.__contents = None
-        self.__symlink = symlink
-        self.__executable = executable
+        self.__files.append(
+            self.File(
+                filename = filename,
+                contents=None,
+                symlink=symlink,
+                executable=executable
+            )
+        )

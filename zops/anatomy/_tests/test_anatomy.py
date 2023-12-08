@@ -171,8 +171,8 @@ def test_use_features(anatomy_checker):
 
 def test_use_features_override_variables(anatomy_checker):
     """
-    Check how the order of use-features on ZULU changes the output. The last feature in the list will have its value
-    overwriting all others.
+    Check how the order of use-features on ZULU changes the output. The last
+    feature in the list will have its value overwriting all others.
     """
     anatomy_checker.check(
         """

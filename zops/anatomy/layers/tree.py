@@ -1,7 +1,8 @@
 import os
 
 from zerotk.lib.text import dedent
-from collections import OrderedDict, MutableMapping
+from collections import OrderedDict
+from collections.abc import MutableMapping
 import distutils.util
 
 
@@ -70,6 +71,14 @@ class TemplateEngine(object):
             return result
 
         env.filters["dashcase"] = dashcase
+
+        def quoted(value):
+            if isinstance(value, str):
+                return '"%s"' % value
+            else:
+                return ['"%s"' % i for i in value]
+
+        env.filters["quoted"] = quoted
 
         def dmustache(text_):
             return "{{" + str(text_) + "}}"
@@ -236,7 +245,7 @@ class AnatomyFile(object):
 
         # Use alternative variable/block expansion when working with Ansible
         # file.
-        alt_expansion = filename.endswith("ansible.yml")
+        alt_expansion = filename.endswith("ansible.yml") or ".github/workflows" in filename
 
         try:
             content = expand(self.__content, variables, alt_expansion)

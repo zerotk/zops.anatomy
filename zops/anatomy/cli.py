@@ -30,7 +30,11 @@ def apply(ctx, directories, features_file, templates_dir, playbook_file, recursi
     for i_directory in directories:
         project_name = os.path.basename(os.path.abspath(i_directory))
         project_playbook_filename = f"anatomy-features/playbooks/{project_name}.yml"
-        project_playbook_filename = find_up(project_playbook_filename, i_directory)
+        try:
+            project_playbook_filename = find_up(project_playbook_filename, i_directory)
+        except FileNotFoundError:
+            click.echo(f"CRITICAL: Playbook not found: {project_playbook_filename}")
+            continue
 
         if playbook_file is not None:
             playbook_filenames = [playbook_file]

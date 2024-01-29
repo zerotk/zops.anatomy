@@ -82,7 +82,7 @@ def test_anatomy_feature_from_yaml(datadir):
     ]
 
     feature = AnatomyFeatureRegistry.get("CREATEFILE")
-    assert feature.filename == "filename.txt"
+    assert feature.filenames() == ["filename.txt"]
 
     tree = _play_feature(feature, datadir)
     assert tree._AnatomyTree__variables == {

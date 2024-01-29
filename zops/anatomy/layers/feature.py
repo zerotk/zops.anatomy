@@ -1,7 +1,4 @@
-from zops.anatomy.layers.tree import merge_dict
 from collections import OrderedDict
-import types
-import os
 from dataclasses import dataclass
 
 
@@ -60,7 +57,7 @@ class AnatomyFeatureRegistry(object):
 
         text = dedent(text)
         contents = yaml_load(text)
-        return cls.register_from_contents(contents)
+        return cls.register_from_contents(contents, templates_dir="")
 
     @classmethod
     def register_from_contents(cls, contents, templates_dir):
@@ -95,8 +92,8 @@ class AnatomyFeatureRegistry(object):
         """
         result = []
         for i_name, i_feature in cls.feature_registry.items():
-            if i_feature.filename:
-                result.append((i_name, i_feature.filename, i_feature.filename))
+            for j_filename in i_feature.filenames():
+                result.append((i_name, j_filename, j_filename))
         return result
 
 
@@ -247,3 +244,6 @@ class AnatomyFeature(IAnatomyFeature):
                 executable=executable
             )
         )
+
+    def filenames(self):
+        return [i.filename for i in self.__files]

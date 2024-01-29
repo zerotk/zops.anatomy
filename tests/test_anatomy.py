@@ -382,7 +382,7 @@ def anatomy_checker(datadir):
             else:
                 raise TypeError(seed.__class__)
             AnatomyFeatureRegistry.clear()
-            AnatomyFeatureRegistry.register_from_contents(contents)
+            AnatomyFeatureRegistry.register_from_contents(contents, templates_dir="")
             playbook = AnatomyPlaybook.from_contents(contents)
             target_dir = datadir + "/target"
             playbook.apply(target_dir)

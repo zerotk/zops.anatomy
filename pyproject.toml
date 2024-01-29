@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "zops-anatomy"
+version = "0.1.0"
+description = ""
+authors = ["Alexandre Andrade <kaniabi@gmail.com>"]
+readme = "README.md"
+packages = [{include = "zops"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+"zerotk.lib" = "^1.3.1"
+Jinja2 = "^3.1.3"
+stringcase = "^1.2.0"
+ansible = "^9.1.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.4"
+datadiff = "^2.2.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
